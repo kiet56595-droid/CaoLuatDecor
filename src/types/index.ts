@@ -1,0 +1,66 @@
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  itemCount: number;
+}
+
+export interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  code: string;
+  categoryId: string;
+  categoryName: string;
+  price: number | null; // null = Liên hệ báo giá
+  displayPrice?: string; // Optional custom display (e.g., "Từ 15.000.000 đ")
+  images: string[];
+  shortDescription: string;
+  description: string;
+  material: string;
+  dimensions: string;
+  warranty: string;
+  origin: string;
+  isFeatured?: boolean;
+  isNew?: boolean;
+  isBestSeller?: boolean;
+  inStock?: boolean;
+  features?: string[];
+}
+
+export type ProjectCategory = 
+  | 'all'
+  | 'can-ho'
+  | 'nha-pho'
+  | 'biet-thu'
+  | 'phong-khach'
+  | 'phong-ngu'
+  | 'nha-bep';
+
+export interface Project {
+  id: string;
+  slug: string;
+  title: string;
+  category: ProjectCategory;
+  categoryLabel: string;
+  location: string;
+  area: string;
+  style: string;
+  year: string;
+  thumbnail: string;
+  gallery: string[];
+  description: string;
+  scopeOfWork: string;
+}
+
+export interface Testimonial {
+  id: string;
+  clientName: string;
+  projectType: string;
+  comment: string;
+  rating: number;
+  avatar: string;
+  isDemo: true;
+}
