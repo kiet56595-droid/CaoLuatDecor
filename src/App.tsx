@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { TopBar } from './components/layout/TopBar';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
@@ -70,9 +70,9 @@ export const App: React.FC = () => {
                 element={<ProductDetailPage onOpenQuote={handleOpenQuote} />}
               />
               <Route path="/danh-muc" element={<CategoriesPage />} />
-              <Route path="/du-an" element={<ProjectsPage />} />
+              <Route path="/du-an" element={<Navigate to="/san-pham" replace />} />
               <Route path="/gioi-thieu" element={<AboutPage />} />
-              <Route path="/lien-he" element={<ContactPage />} />
+              <Route path="/lien-he" element={<Navigate to="/san-pham" replace />} />
 
               {/* ── Protected: Chỉ dành cho Khách hàng đã đăng nhập ── */}
               <Route

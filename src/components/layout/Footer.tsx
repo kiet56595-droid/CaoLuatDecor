@@ -78,21 +78,15 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/du-an" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
-                  <ChevronRight className="w-3.5 h-3.5 text-[#C5A880]" />
-                  <span>Dự án nội thất tiêu biểu</span>
-                </Link>
-              </li>
-              <li>
                 <Link to="/san-pham" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
                   <ChevronRight className="w-3.5 h-3.5 text-[#C5A880]" />
-                  <span>Bộ sưu tập nội thất</span>
+                  <span>Tất cả sản phẩm</span>
                 </Link>
               </li>
               <li>
-                <Link to="/lien-he" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
+                <Link to="/danh-muc" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
                   <ChevronRight className="w-3.5 h-3.5 text-[#C5A880]" />
-                  <span>Liên hệ & Báo giá</span>
+                  <span>Danh mục không gian sống</span>
                 </Link>
               </li>
               <li className="pt-2">

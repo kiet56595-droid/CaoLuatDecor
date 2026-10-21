@@ -4,7 +4,6 @@ import { SubBanners } from '../components/home/SubBanners';
 import { CategoryGrid } from '../components/home/CategoryGrid';
 import { FeaturedSection } from '../components/home/FeaturedSection';
 import { ProductTabsSection } from '../components/home/ProductTabsSection';
-import { ProjectsShowcase } from '../components/home/ProjectsShowcase';
 import { BrandAdvantages } from '../components/home/BrandAdvantages';
 import { TestimonialsSection } from '../components/home/TestimonialsSection';
 import { CtaBanner } from '../components/home/CtaBanner';
@@ -23,7 +22,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onOpenQuote }) => {
       <CategoryGrid />
       <FeaturedSection products={PRODUCTS} onOpenQuote={onOpenQuote} />
       <ProductTabsSection products={PRODUCTS} onOpenQuote={onOpenQuote} />
-      <ProjectsShowcase />
       <BrandAdvantages />
       <TestimonialsSection />
       <CtaBanner onOpenQuote={() => onOpenQuote(null)} />
