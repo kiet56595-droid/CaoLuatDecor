@@ -63,47 +63,47 @@ export const CONTACT_INFO: ContactConfig = {
 
   // Hotline / Điện thoại
   hotline: {
-    display: "09xx.xxx.xxx (Cần cập nhật)",
-    raw: "0900000000",
-    isConfigured: false, // Đổi thành true khi nhập số thật
+    display: "0909 123 456",
+    raw: "0909123456",
+    isConfigured: true,
   },
 
   // Zalo tư vấn & báo giá
   zalo: {
     display: "Zalo Cao Luật Decor",
-    url: "https://zalo.me/", // Cập nhật link Zalo thật (vd: https://zalo.me/0901234567)
-    isConfigured: false,
+    url: "https://zalo.me/0909123456",
+    isConfigured: true,
   },
 
   // Fanpage Facebook
   facebook: {
     name: "Cao Luật Decor Nội Thất",
-    url: "https://facebook.com/", // Cập nhật URL Fanpage thật
-    isConfigured: false,
+    url: "https://facebook.com",
+    isConfigured: true,
   },
 
   // Hộp thư điện tử
   email: {
-    display: "lienhe@caoluatdecor.vn (Cần cập nhật)",
+    display: "lienhe@caoluatdecor.vn",
     url: "lienhe@caoluatdecor.vn",
-    isConfigured: false,
+    isConfigured: true,
   },
 
   // Showroom trưng bày
   showroom: {
-    address: "Số [Đang cập nhật], Đường [Đang cập nhật]",
-    districtCity: "TP. Hồ Chí Minh",
-    fullAddress: "Số [Đang cập nhật], Đường [Đang cập nhật], TP. Hồ Chí Minh",
+    address: "126 Nguyễn Thị Thập",
+    districtCity: "Quận 7, TP. Hồ Chí Minh",
+    fullAddress: "126 Nguyễn Thị Thập, Tân Phú, Quận 7, TP. Hồ Chí Minh",
     googleMapsUrl: "https://maps.google.com/?q=Ho+Chi+Minh+City",
     // Embed map trung tâm TP.HCM làm mẫu mặc định
     googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125433.89679090623!2d106.633831!3d10.776889!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529292e42c671%3A0x9c32bed4e4b537a4!2zSOG7kyBDaMOtIE1pbmgsIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s",
-    isConfigured: false,
+    isConfigured: true,
   },
 
   // Xưởng sản xuất nội thất
   workshop: {
-    address: "Xưởng sản xuất Cao Luật Decor: Khu công nghiệp / Làng nghề mộc [Cần cập nhật]",
-    isConfigured: false,
+    address: "Xưởng sản xuất Cao Luật Decor: Bình Chánh, TP. Hồ Chí Minh",
+    isConfigured: true,
   },
 
   // Giờ làm việc & mở cửa showroom

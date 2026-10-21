@@ -52,7 +52,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
             <span className="text-[11px] uppercase tracking-wider text-[#DFC7A7] font-semibold block">
               TƯ VẤN &amp; BÁO GIÁ NHANH
             </span>
-            <h3 className="text-lg font-serif font-bold text-white truncate max-w-xs sm:max-w-sm">
+            <h3 className="text-base sm:text-lg font-bold text-white truncate max-w-xs sm:max-w-sm">
               {productName}
             </h3>
           </div>
@@ -71,7 +71,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
               <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-serif font-bold text-[#29231F]">
+              <h4 className="text-xl font-bold text-[#29231F]">
                 Đã tiếp nhận yêu cầu!
               </h4>
               <p className="text-sm text-[#6E665E] max-w-sm mx-auto">

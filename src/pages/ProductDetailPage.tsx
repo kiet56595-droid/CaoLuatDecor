@@ -174,7 +174,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onOpenQuot
               </div>
 
               {/* Title */}
-              <h1 className="text-2xl sm:text-3xl font-bold font-serif text-[#29231F] leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#29231F] leading-tight">
                 {product.name}
               </h1>
 
@@ -184,12 +184,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onOpenQuot
                   Mức giá tham khảo:
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-serif font-bold text-[#654329]">
+                  <span className="text-2xl sm:text-3xl font-bold text-[#654329]">
                     {formattedPrice}
                   </span>
                   {product.price && (
-                    <span className="text-xs text-[#877B70] italic">
-                      (Đã bao gồm chi phí hoàn thiện)
+                    <span className="text-xs text-[#877B70]">
+                      (Đã bao gồm hoàn thiện)
                     </span>
                   )}
                 </div>

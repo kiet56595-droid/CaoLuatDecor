@@ -20,15 +20,15 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-[#654329] mb-2">
+            <div className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-[#654329] mb-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#C5A880]" />
-              <span>BỘ SƯU TẬP CAO CẤP</span>
+              <span>SẢN PHẨM TIÊU BIỂU</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-serif text-[#29231F]">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#29231F]">
               Sản Phẩm Nội Thất Nổi Bật
             </h2>
             <p className="text-xs sm:text-sm text-[#6E665E] mt-1">
-              Những kiệt tác nội thất được tuyển chọn kỹ lưỡng về vật liệu, tỷ lệ và độ bền trường tồn.
+              Mẫu nội thất cao cấp được thiết kế chuẩn xưởng và được khách hàng yêu thích nhất.
             </p>
           </div>
 

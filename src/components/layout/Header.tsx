@@ -56,11 +56,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuoteModal }) => {
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-lg bg-[#654329] flex items-center justify-center text-white font-serif font-bold text-xl shadow-md group-hover:bg-[#533722] transition-colors">
+            <div className="w-10 h-10 rounded-lg bg-[#654329] flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:bg-[#533722] transition-colors">
               <span className="tracking-tighter text-[#DFC7A7]">CL</span>
             </div>
             <div className="flex flex-col">
-              <span className="font-serif font-bold text-lg sm:text-xl tracking-wider text-[#654329] group-hover:text-[#432C1B] transition-colors leading-tight">
+              <span className="font-bold text-lg sm:text-xl tracking-wide text-[#654329] group-hover:text-[#432C1B] transition-colors leading-tight">
                 CAO LUẬT DECOR
               </span>
               <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-[#877B70]">

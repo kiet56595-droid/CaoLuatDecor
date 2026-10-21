@@ -4,7 +4,6 @@ import { TopBar } from './components/layout/TopBar';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { FloatingContact } from './components/layout/FloatingContact';
-import { ConfigNoticeBanner } from './components/common/ConfigNoticeBanner';
 import { QuoteModal } from './components/products/QuoteModal';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -53,9 +52,6 @@ export const App: React.FC = () => {
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <ScrollToTop />
         <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#29231F] selection:bg-[#654329] selection:text-white">
-          {/* Notice for Demo Placeholder Config */}
-          <ConfigNoticeBanner />
-
           {/* Top Info Bar */}
           <TopBar />
 

@@ -35,29 +35,29 @@ export const BrandAdvantages: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column: Brand Story & Philosophy */}
           <div className="lg:col-span-5 space-y-6">
-            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-[#654329] block">
+            <span className="text-xs uppercase tracking-wider font-semibold text-[#654329] block">
               VÌ SAO CHỌN CAO LUẬT DECOR
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold font-serif text-[#29231F] leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#29231F] leading-tight">
               Tâm Huyết Trong Từng <br />
-              <span className="text-[#654329] italic font-normal">Chi Tiết Không Gian Sống</span>
+              <span className="text-[#654329]">Chi Tiết Không Gian Sống</span>
             </h2>
             <p className="text-sm text-[#6E665E] leading-relaxed">
-              Tại <strong>Cao Luật Decor Nội Thất</strong>, chúng tôi không chỉ bán một món đồ gỗ, mà mang đến giải pháp không gian sống đồng bộ, ấm cúng và phản chiếu cá tính của gia chủ.
+              Tại <strong>Cao Luật Decor Nội Thất</strong>, chúng tôi mang đến giải pháp không gian sống đồng bộ, ấm cúng và tôn vinh cá tính của gia chủ.
             </p>
 
             <ul className="space-y-3 text-xs sm:text-sm text-[#473E37]">
               <li className="flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 text-[#654329] shrink-0 mt-0.5" />
-                <span>Trực tiếp sản xuất, không qua trung gian giúp giá thành cạnh tranh và kiểm soát chất lượng chặt chẽ.</span>
+                <span>Trực tiếp sản xuất tại xưởng, tối ưu chi phí và kiểm soát chất lượng.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 text-[#654329] shrink-0 mt-0.5" />
-                <span>Chỉ sử dụng vật liệu có nguồn gốc rõ ràng: Cốt gỗ An Cường, da bò Ý, đá Marble & Ceramic chống ố.</span>
+                <span>Vật liệu chuẩn: Gỗ An Cường, da bọc cao cấp, đá Marble & Ceramic chống ố.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 text-[#654329] shrink-0 mt-0.5" />
-                <span>Cam kết đúng tiến độ, bảo hành kết cấu 3 - 5 năm và bảo trì tận tâm.</span>
+                <span>Cam kết đúng tiến độ, bảo hành 3 - 5 năm và bảo trì tận tâm.</span>
               </li>
             </ul>
           </div>
@@ -75,11 +75,11 @@ export const BrandAdvantages: React.FC = () => {
                     <div className="w-12 h-12 rounded-lg bg-[#654329]/10 text-[#654329] flex items-center justify-center">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className="text-2xl font-serif font-bold text-[#D5C3AF]">
+                    <span className="text-2xl font-bold text-[#D5C3AF]">
                       {item.step}
                     </span>
                   </div>
-                  <h3 className="font-serif font-bold text-base text-[#29231F] mb-2">
+                  <h3 className="font-semibold text-base text-[#29231F] mb-1.5">
                     {item.title}
                   </h3>
                   <p className="text-xs text-[#6E665E] leading-relaxed">

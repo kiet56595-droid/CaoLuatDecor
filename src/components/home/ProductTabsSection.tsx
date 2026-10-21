@@ -29,8 +29,8 @@ export const ProductTabsSection: React.FC<ProductTabsSectionProps> = ({
             <span className="text-xs uppercase tracking-wider font-semibold text-[#654329] block mb-1">
               XU HƯỚNG NỘI THẤT
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[#29231F]">
-              Bộ Sưu Tập Mới &amp; Được Yêu Thích
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#29231F]">
+              Bộ Sưu Tập Mới &amp; Bán Chạy
             </h2>
           </div>
 

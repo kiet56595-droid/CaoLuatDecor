@@ -9,15 +9,15 @@ export const CategoryGrid: React.FC = () => {
     <section className="py-16 bg-[#F7F3ED]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs uppercase tracking-[0.2em] font-semibold text-[#654329] block mb-2">
-            KHÁM PHÁ THEO KHÔNG GIAN
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <span className="text-xs uppercase tracking-wider font-semibold text-[#654329] block mb-1">
+            DANH MỤC NỘI THẤT
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-serif text-[#29231F] mb-3">
-            Danh Mục Sản Phẩm Nội Thất
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#29231F] mb-2">
+            Không Gian Sống Đầy Đủ Tiện Nghi
           </h2>
           <p className="text-xs sm:text-sm text-[#6E665E]">
-            Hơn 10 danh mục nội thất thiết kế theo chuẩn kích thước và vật liệu cao cấp, đáp ứng mọi nhu cầu tân trang ngôi nhà.
+            Đầy đủ nội thất phòng khách, phòng ngủ, phòng ăn và tủ bếp may đo chuẩn kích thước.
           </p>
         </div>
 
@@ -39,11 +39,11 @@ export const CategoryGrid: React.FC = () => {
               </div>
               <div className="p-3 text-center flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-serif font-bold text-sm text-[#29231F] group-hover:text-[#654329] transition-colors">
+                  <h3 className="font-semibold text-sm text-[#29231F] group-hover:text-[#654329] transition-colors">
                     {cat.name}
                   </h3>
                   <span className="text-[11px] text-[#9E978F] mt-0.5 block">
-                    {cat.itemCount}+ mẫu thiết kế
+                    {cat.itemCount}+ mẫu
                   </span>
                 </div>
               </div>

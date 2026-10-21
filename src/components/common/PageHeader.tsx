@@ -27,7 +27,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         <div className="text-white/80 mb-3">
           <Breadcrumb items={breadcrumbs} />
         </div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-serif tracking-tight text-white mb-3">
+        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-2">
           {title}
         </h1>
         {subtitle && (

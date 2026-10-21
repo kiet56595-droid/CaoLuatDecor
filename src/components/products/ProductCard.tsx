@@ -63,7 +63,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onOpenQuote }
         </span>
 
         {/* Title */}
-        <h3 className="font-serif font-bold text-base sm:text-lg text-[#29231F] group-hover:text-[#654329] transition-colors line-clamp-1 mb-2">
+        <h3 className="font-semibold text-sm sm:text-base text-[#29231F] group-hover:text-[#654329] transition-colors line-clamp-1 mb-1.5">
           <Link to={`/san-pham/${product.slug}`}>{product.name}</Link>
         </h3>
 
@@ -76,9 +76,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onOpenQuote }
         <div className="mt-auto pt-3 border-t border-[#F7F3ED]">
           <div className="flex items-baseline justify-between mb-3">
             <div>
-              <span className="text-xs text-[#9E978F] block">Giá tham khảo:</span>
-              <span className={`font-serif font-bold ${
-                product.price ? 'text-[#654329] text-base sm:text-lg' : 'text-[#877B70] text-sm italic'
+              <span className="text-[11px] text-[#9E978F] block">Giá tham khảo:</span>
+              <span className={`font-bold ${
+                product.price ? 'text-[#654329] text-base' : 'text-[#877B70] text-sm'
               }`}>
                 {formattedPrice}
               </span>

@@ -19,14 +19,14 @@ export const Footer: React.FC = () => {
           {/* Col 1: Brand Info & Values */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#654329] border border-[#C5A880]/30 flex items-center justify-center text-[#DFC7A7] font-serif font-bold text-lg">
+              <div className="w-10 h-10 rounded-lg bg-[#654329] border border-[#C5A880]/30 flex items-center justify-center text-[#DFC7A7] font-bold text-lg">
                 CL
               </div>
-              <span className="font-serif font-bold text-lg text-white tracking-wide">
+              <span className="font-bold text-lg text-white tracking-wide">
                 CAO LUẬT DECOR
               </span>
             </div>
-            <p className="text-xs italic text-[#C5A880] font-serif">
+            <p className="text-xs text-[#DFC7A7] font-medium">
               "{CONTACT_INFO.slogan}"
             </p>
             <p className="text-xs text-[#9E978F] leading-relaxed">
@@ -106,7 +106,7 @@ export const Footer: React.FC = () => {
 
           {/* Col 3: Categories */}
           <div className="space-y-4">
-            <h3 className="font-serif font-bold text-white text-base tracking-wide border-b border-[#3A322C] pb-2 inline-block">
+            <h3 className="font-bold text-white text-base tracking-wide border-b border-[#3A322C] pb-2 inline-block">
               Danh Mục Sản Phẩm
             </h3>
             <ul className="grid grid-cols-1 gap-2 text-xs text-[#9E978F]">
@@ -134,7 +134,7 @@ export const Footer: React.FC = () => {
 
           {/* Col 4: Contact & Showroom */}
           <div className="space-y-4">
-            <h3 className="font-serif font-bold text-white text-base tracking-wide border-b border-[#3A322C] pb-2 inline-block">
+            <h3 className="font-bold text-white text-base tracking-wide border-b border-[#3A322C] pb-2 inline-block">
               Thông Tin Liên Hệ
             </h3>
             <div className="space-y-3 text-xs text-[#C7C3BD]">
