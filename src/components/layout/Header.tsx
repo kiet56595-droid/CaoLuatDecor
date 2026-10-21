@@ -39,7 +39,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuoteModal }) => {
     { label: 'Trang chủ', path: '/' },
     { label: 'Sản phẩm', path: '/san-pham' },
     { label: 'Danh mục', path: '/danh-muc' },
-    { label: 'Giới thiệu', path: '/gioi-thieu' },
   ];
 
   return (

@@ -71,7 +71,7 @@ export const App: React.FC = () => {
               />
               <Route path="/danh-muc" element={<CategoriesPage />} />
               <Route path="/du-an" element={<Navigate to="/san-pham" replace />} />
-              <Route path="/gioi-thieu" element={<AboutPage />} />
+              <Route path="/gioi-thieu" element={<Navigate to="/san-pham" replace />} />
               <Route path="/lien-he" element={<Navigate to="/san-pham" replace />} />
 
               {/* ── Protected: Chỉ dành cho Khách hàng đã đăng nhập ── */}

@@ -67,20 +67,20 @@ export const Footer: React.FC = () => {
 
           {/* Col 2: Quick Links */}
           <div className="space-y-4">
-            <h3 className="font-serif font-bold text-white text-base tracking-wide border-b border-[#3A322C] pb-2 inline-block">
-              Về Chúng Tôi
+            <h3 className="font-bold text-white text-base tracking-wide border-b border-[#3A322C] pb-2 inline-block">
+              Sản Phẩm & Dịch Vụ
             </h3>
             <ul className="space-y-2.5 text-xs text-[#9E978F]">
-              <li>
-                <Link to="/gioi-thieu" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
-                  <ChevronRight className="w-3.5 h-3.5 text-[#C5A880]" />
-                  <span>Giới thiệu thương hiệu</span>
-                </Link>
-              </li>
               <li>
                 <Link to="/san-pham" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
                   <ChevronRight className="w-3.5 h-3.5 text-[#C5A880]" />
                   <span>Tất cả sản phẩm</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/danh-muc" className="hover:text-[#DFC7A7] transition-colors flex items-center gap-1.5">
+                  <ChevronRight className="w-3.5 h-3.5 text-[#C5A880]" />
+                  <span>Danh mục nội thất</span>
                 </Link>
               </li>
               <li>
