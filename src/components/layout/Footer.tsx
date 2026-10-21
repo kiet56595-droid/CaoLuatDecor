@@ -150,9 +150,14 @@ export const Footer: React.FC = () => {
                     CL
                   </div>
                   <div>
-                    <h4 className="font-bold text-[13px] text-[#1C1E21] leading-tight hover:underline cursor-pointer">
+                    <a
+                      href={getFacebookHref()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-[13px] text-[#1C1E21] leading-tight hover:underline cursor-pointer block"
+                    >
                       Cao Luật Decor
-                    </h4>
+                    </a>
                     <span className="text-[11px] text-[#65676B]">
                       3,9K người theo dõi
                     </span>
@@ -192,7 +197,7 @@ export const Footer: React.FC = () => {
             <div className="relative border border-[#DADDE1] rounded-lg overflow-hidden bg-white shadow-sm h-64">
               <iframe
                 title="Bản đồ chỉ đường Cao Luật Decor"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.805847424905!2d106.721447!3d10.749557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752579df64faef%3A0xc3fa609072c4ce0a!2zMTI2IE5ndXnhu4VuIFRo4buLIFRo4bqtcCwgVMOibiBQaMO6LCBRdeG6rW4gNywgSOG7kyBDaMOtIE1pbmg!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s"
+                src={CONTACT_INFO.showroom.googleMapsEmbedUrl}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

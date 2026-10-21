@@ -78,7 +78,7 @@ export const CONTACT_INFO: ContactConfig = {
   // Fanpage Facebook
   facebook: {
     name: "Cao Luật Decor Nội Thất",
-    url: "https://facebook.com",
+    url: "https://www.facebook.com/profile.php?id=100094081195645",
     isConfigured: true,
   },
 
@@ -91,12 +91,11 @@ export const CONTACT_INFO: ContactConfig = {
 
   // Showroom trưng bày
   showroom: {
-    address: "126 Nguyễn Thị Thập",
-    districtCity: "Quận 7, TP. Hồ Chí Minh",
-    fullAddress: "126 Nguyễn Thị Thập, Tân Phú, Quận 7, TP. Hồ Chí Minh",
-    googleMapsUrl: "https://maps.google.com/?q=Ho+Chi+Minh+City",
-    // Embed map trung tâm TP.HCM làm mẫu mặc định
-    googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125433.89679090623!2d106.633831!3d10.776889!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529292e42c671%3A0x9c32bed4e4b537a4!2zSOG7kyBDaMOtIE1pbmgsIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s",
+    address: "34/2H2 Đường Vĩnh Phú 41",
+    districtCity: "Thuận An, Bình Dương",
+    fullAddress: "34/2H2 Đường Vĩnh Phú 41, P. Vĩnh Phú, Thuận An, Bình Dương",
+    googleMapsUrl: "https://maps.google.com/?q=10.88548,106.70031",
+    googleMapsEmbedUrl: "https://maps.google.com/maps?q=10.88548,106.70031&hl=vi&z=16&output=embed",
     isConfigured: true,
   },
 
