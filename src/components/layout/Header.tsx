@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, PhoneCall, Search } from 'lucide-react';
 import { CONTACT_INFO, getTelHref, getZaloHref } from '../../config/contact';
+import { UserMenu } from '../auth/UserMenu';
+import { AuthModal } from '../auth/AuthModal';
 
 interface HeaderProps {
   onOpenQuoteModal?: () => void;
@@ -12,6 +14,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuoteModal }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuoteModal }) => {
           </nav>
 
           {/* Header Action Buttons */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2">
             {/* Quick search button */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
@@ -96,6 +99,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuoteModal }) => {
             >
               <Search className="w-5 h-5" />
             </button>
+
+            {/* UserMenu: hiển thị nút Đăng nhập (Guest) hoặc Avatar dropdown (Authenticated) */}
+            <UserMenu onOpenAuth={() => setAuthModalOpen(true)} />
 
             {/* Quick Consultation CTA */}
             {onOpenQuoteModal ? (
@@ -212,6 +218,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenQuoteModal }) => {
           </nav>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+      />
     </header>
   );
 };
