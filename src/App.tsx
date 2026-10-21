@@ -50,7 +50,7 @@ export const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <ScrollToTop />
         <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#29231F] selection:bg-[#654329] selection:text-white">
           {/* Notice for Demo Placeholder Config */}
