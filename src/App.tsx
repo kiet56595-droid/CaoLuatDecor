@@ -18,6 +18,8 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { AccountPage } from './pages/AccountPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { ShopDashboardPage } from './pages/ShopDashboardPage';
 
 import { Product } from './types';
 
@@ -82,6 +84,26 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['CUSTOMER', 'SHOP_OWNER', 'ADMIN']} redirectTo="/">
                     <AccountPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ── Protected: Dành cho Chủ Shop ── */}
+              <Route
+                path="/shop/*"
+                element={
+                  <ProtectedRoute allowedRoles={['SHOP_OWNER']} redirectTo="/">
+                    <ShopDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ── Protected: Dành cho Quản trị viên (Admin) ── */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']} redirectTo="/">
+                    <AdminDashboardPage />
                   </ProtectedRoute>
                 }
               />
