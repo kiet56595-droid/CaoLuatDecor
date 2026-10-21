@@ -1,16 +1,45 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { ProductFilter, SortOption } from '../components/products/ProductFilter';
 import { ProductGrid } from '../components/products/ProductGrid';
-import { CategorySidebar } from '../components/products/CategorySidebar';
 import { PRODUCTS } from '../data/products';
 import { CATEGORIES } from '../data/categories';
 import { Product } from '../types';
 import { ChevronRight, Home, SlidersHorizontal, RotateCcw } from 'lucide-react';
 
+export type SortOption = 'default' | 'price-asc' | 'price-desc' | 'newest';
+
 interface ProductsPageProps {
   onOpenQuote: (product: Product) => void;
 }
+
+// Map nhóm phòng sang các danh mục con
+const ROOM_MAP: Record<string, string[]> = {
+  'phong-khach': ['sofa-phong-khach', 'ban-tra', 'ke-tivi'],
+  'phong-an': ['ban-an-ghe-an'],
+  'phong-ngu': ['giuong-ngu', 'tu-quan-ao'],
+  'tu-bep': ['tu-bep'],
+  'noi-that-tre-em': ['noi-that-tre-em'],
+  'noi-that-van-phong': ['noi-that-van-phong'],
+  'do-decor-trang-tri': ['do-decor-trang-tri'],
+};
+
+// Tên hiển thị chuẩn cho từng danh mục / nhóm phòng
+const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  'all': 'Tất Cả Sản Phẩm',
+  'phong-khach': 'Nội Thất Phòng Khách',
+  'sofa-phong-khach': 'Sofa Phòng Khách',
+  'ban-tra': 'Bàn Trà',
+  'ke-tivi': 'Kệ Tivi',
+  'phong-an': 'Nội Thất Phòng Ăn',
+  'ban-an-ghe-an': 'Bàn Ăn & Ghế Ăn',
+  'phong-ngu': 'Nội Thất Phòng Ngủ',
+  'giuong-ngu': 'Giường Ngủ',
+  'tu-quan-ao': 'Tủ Quần Áo',
+  'tu-bep': 'Hệ Tủ Bếp',
+  'noi-that-tre-em': 'Nội Thất Phòng Em Bé',
+  'noi-that-van-phong': 'Nội Thất Văn Phòng',
+  'do-decor-trang-tri': 'Đồ Decor Trang Trí',
+};
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,33 +59,6 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
     setSearchQuery(queryParam);
   }, [queryParam]);
 
-  const handleSelectCategory = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (categoryId === 'all') {
-        next.delete('category');
-      } else {
-        next.set('category', categoryId);
-      }
-      return next;
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (!query.trim()) {
-        next.delete('search');
-      } else {
-        next.set('search', query.trim());
-      }
-      return next;
-    });
-  };
-
   const handleResetFilters = () => {
     setSelectedCategory('all');
     setSearchQuery('');
@@ -67,11 +69,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter((product) => {
-      // Category match
-      const matchCategory =
-        selectedCategory === 'all' || product.categoryId === selectedCategory;
+      // Category match: hỗ trợ cả nhóm phòng lẫn danh mục con
+      let matchCategory = selectedCategory === 'all';
+      if (!matchCategory) {
+        if (product.categoryId === selectedCategory) {
+          matchCategory = true;
+        } else if (ROOM_MAP[selectedCategory] && ROOM_MAP[selectedCategory].includes(product.categoryId)) {
+          matchCategory = true;
+        }
+      }
 
-      // Search match (name, code, material)
+      // Search match (name, code, material, categoryName)
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
         !q ||
@@ -99,117 +107,98 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
     });
   }, [selectedCategory, searchQuery, sortBy]);
 
-  const currentCategoryObj = CATEGORIES.find((c) => c.id === selectedCategory);
-  const isFiltered = selectedCategory !== 'all' || searchQuery.trim() !== '' || sortBy !== 'default';
+  const title = CATEGORY_DISPLAY_NAMES[selectedCategory] ||
+    CATEGORIES.find((c) => c.id === selectedCategory)?.name ||
+    'Sản Phẩm Nội Thất';
+
+  const isFiltered = selectedCategory !== 'all' || searchQuery.trim() !== '';
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
-      {/* ── Breadcrumb Bar (Decor3mien style) ── */}
-      <div className="bg-white border-b border-[#E7DCce] py-3">
+      {/* ── Breadcrumb Bar gọn gàng ── */}
+      <div className="bg-white border-b border-[#E7DCce] py-2.5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-1.5 text-xs text-[#6E665E]" aria-label="Breadcrumb">
             <Link to="/" className="flex items-center gap-1 hover:text-[#654329] transition-colors">
               <Home className="w-3.5 h-3.5" />
-              <span>TRANG CHỦ</span>
+              <span>Trang chủ</span>
             </Link>
             <ChevronRight className="w-3.5 h-3.5 text-[#C7C3BD]" />
-            <Link to="/san-pham" className={`hover:text-[#654329] transition-colors ${selectedCategory === 'all' ? 'font-bold text-[#654329]' : ''}`}>
-              SẢN PHẨM
+            <Link
+              to="/san-pham"
+              className={`hover:text-[#654329] transition-colors ${selectedCategory === 'all' ? 'font-bold text-[#654329]' : ''}`}
+            >
+              Sản phẩm
             </Link>
-            {currentCategoryObj && (
+            {selectedCategory !== 'all' && (
               <>
                 <ChevronRight className="w-3.5 h-3.5 text-[#C7C3BD]" />
-                <span className="font-bold text-[#654329] uppercase">
-                  {currentCategoryObj.name}
+                <span className="font-bold text-[#654329]">
+                  {title}
                 </span>
               </>
             )}
             {searchQuery && (
               <>
                 <ChevronRight className="w-3.5 h-3.5 text-[#C7C3BD]" />
-                <span className="italic text-[#877B70]">Từ khóa: "{searchQuery}"</span>
+                <span className="italic text-[#877B70]">Tìm kiếm: "{searchQuery}"</span>
               </>
             )}
           </nav>
         </div>
       </div>
 
-      {/* ── 2-Column Main Content (Sidebar left + Products right) ── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-          {/* Left Column: Category Sidebar (3 cols) */}
-          <div className="lg:col-span-3">
-            <CategorySidebar
-              selectedCategory={selectedCategory}
-              onSelectCategory={handleSelectCategory}
-            />
+      {/* ── Main Content: Toàn bộ chiều rộng cho sản phẩm, không còn sidebar hay banner rườm rà ── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        {/* Thanh tiêu đề & Bộ sắp xếp tối giản */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E7DCce]">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#29231F] uppercase tracking-wide">
+              {title}
+            </h1>
+            <span className="text-xs bg-[#F7F3ED] text-[#654329] font-semibold px-2.5 py-1 rounded-full border border-[#D5C3AF]">
+              {filteredProducts.length} sản phẩm
+            </span>
           </div>
 
-          {/* Right Column: Products & Controls (9 cols) */}
-          <div className="lg:col-span-9 space-y-5">
-            {/* Category Header Banner (Decor3mien style) */}
-            <div className="bg-white rounded-lg border border-[#E7DCce] p-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F7F3ED] pb-3 mb-3">
-                <h1 className="text-xl sm:text-2xl font-bold text-[#29231F] uppercase">
-                  {currentCategoryObj ? currentCategoryObj.name : 'Tất Cả Sản Phẩm Nội Thất'}
-                </h1>
+          <div className="flex items-center gap-3">
+            {isFiltered && (
+              <button
+                onClick={handleResetFilters}
+                className="text-xs text-[#654329] hover:underline flex items-center gap-1 font-semibold mr-2"
+                title="Xem tất cả sản phẩm"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Xem tất cả</span>
+              </button>
+            )}
 
-                {/* Sort dropdown & Result Counter */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#877B70]" />
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      className="border border-[#D5C3AF] rounded px-2.5 py-1.5 text-xs bg-[#FAF8F5] text-[#29231F] focus:outline-none focus:border-[#654329] cursor-pointer"
-                    >
-                      <option value="default">Sắp xếp mặc định</option>
-                      <option value="newest">Mới nhất</option>
-                      <option value="price-asc">Giá: Thấp đến cao</option>
-                      <option value="price-desc">Giá: Cao đến thấp</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Category intro text */}
-              <p className="text-xs sm:text-sm text-[#6E665E] leading-relaxed">
-                {currentCategoryObj
-                  ? currentCategoryObj.description
-                  : 'Nội thất may đo chuẩn xưởng Cao Luật Decor: Sofa phòng khách, bàn ăn, giường tủ, tủ bếp và đồ trang trí sản xuất theo yêu cầu.'}
-              </p>
-
-              {/* Status bar */}
-              <div className="mt-3 pt-3 border-t border-[#F7F3ED] flex items-center justify-between text-xs text-[#877B70]">
-                <span>
-                  Hiển thị <strong>{filteredProducts.length}</strong> sản phẩm
-                  {selectedCategory !== 'all' && currentCategoryObj ? ` trong danh mục ${currentCategoryObj.name}` : ''}
-                </span>
-
-                {isFiltered && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="text-[#654329] hover:underline flex items-center gap-1 font-semibold text-xs"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Xem tất cả</span>
-                  </button>
-                )}
-              </div>
+            <div className="flex items-center gap-1.5 text-xs text-[#6E665E]">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#877B70]" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="border border-[#D5C3AF] rounded px-2.5 py-1.5 text-xs bg-white text-[#29231F] focus:outline-none focus:border-[#654329] cursor-pointer"
+              >
+                <option value="default">Sắp xếp mặc định</option>
+                <option value="newest">Sản phẩm mới nhất</option>
+                <option value="price-asc">Giá: Thấp đến cao</option>
+                <option value="price-desc">Giá: Cao đến thấp</option>
+              </select>
             </div>
-
-            {/* Products Grid */}
-            <ProductGrid
-              products={filteredProducts}
-              onOpenQuote={onOpenQuote}
-              emptyMessage={
-                searchQuery
-                  ? `Không tìm thấy sản phẩm nào khớp với từ khóa "${searchQuery}". Vui lòng thử tìm kiếm khác.`
-                  : 'Hiện chưa có sản phẩm trong danh mục này. Vui lòng chọn danh mục khác.'
-              }
-            />
           </div>
         </div>
+
+        {/* Lưới sản phẩm toàn màn hình (Direct Products Grid) */}
+        <ProductGrid
+          products={filteredProducts}
+          onOpenQuote={onOpenQuote}
+          emptyMessage={
+            searchQuery
+              ? `Không tìm thấy sản phẩm nào khớp với từ khóa "${searchQuery}". Vui lòng thử tìm kiếm khác.`
+              : 'Hiện chưa có sản phẩm trong danh mục này. Vui lòng chọn danh mục khác trên thanh điều hướng.'
+          }
+        />
       </main>
     </div>
   );

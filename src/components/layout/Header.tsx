@@ -16,8 +16,8 @@ export interface CategoryNavGroup {
 export const CATEGORY_NAV_GROUPS: CategoryNavGroup[] = [
   {
     label: 'NỘI THẤT PHÒNG KHÁCH',
-    path: '/san-pham?category=sofa-phong-khach',
-    categoryId: 'sofa-phong-khach',
+    path: '/san-pham?category=phong-khach',
+    categoryId: 'phong-khach',
     items: [
       { label: 'Sofa Phòng Khách', categoryId: 'sofa-phong-khach', path: '/san-pham?category=sofa-phong-khach' },
       { label: 'Bàn Trà Mặt Đá & Gỗ', categoryId: 'ban-tra', path: '/san-pham?category=ban-tra' },
@@ -34,8 +34,8 @@ export const CATEGORY_NAV_GROUPS: CategoryNavGroup[] = [
   },
   {
     label: 'NỘI THẤT PHÒNG NGỦ',
-    path: '/san-pham?category=giuong-ngu',
-    categoryId: 'giuong-ngu',
+    path: '/san-pham?category=phong-ngu',
+    categoryId: 'phong-ngu',
     items: [
       { label: 'Giường Ngủ Hiện Đại', categoryId: 'giuong-ngu', path: '/san-pham?category=giuong-ngu' },
       { label: 'Tủ Quần Áo Cánh Kính', categoryId: 'tu-quan-ao', path: '/san-pham?category=tu-quan-ao' },
