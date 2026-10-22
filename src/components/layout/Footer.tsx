@@ -70,6 +70,7 @@ const FB_POSTS: FbPost[] = [
 ];
 
 export const Footer: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'official' | 'feed'>('official');
   const [isFollowing, setIsFollowing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Record<number, boolean>>({});
 
@@ -206,38 +207,101 @@ export const Footer: React.FC = () => {
               </a>
             </div>
 
-            {/* Màn hình nhỏ Fanpage chuyên biệt - Cuộn lướt bài viết mượt mà 100% & link đến Facebook thực tế */}
-            <div className="border border-[#DADDE1] rounded-lg overflow-hidden bg-[#F0F2F5] shadow-sm h-[340px] flex flex-col">
-              {/* Thanh điều hướng giả lập mini browser / mobile app */}
-              <div className="bg-[#1877F2] text-white px-3 py-1.5 flex items-center justify-between text-xs shrink-0 shadow-sm">
+            {/* Khung Fanpage chính thức - Hỗ trợ xem trực tiếp plugin Facebook hoặc chuyển bảng tin */}
+            <div className="border border-[#DADDE1] rounded-lg overflow-hidden bg-white shadow-sm h-[340px] flex flex-col">
+              {/* Tab chuyển đổi chế độ xem */}
+              <div className="bg-[#F0F2F5] px-2 py-1.5 flex items-center justify-between border-b border-[#DADDE1] text-xs shrink-0">
+                <div className="flex items-center gap-1 bg-[#E4E6EB] p-0.5 rounded">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('official')}
+                    className={`px-2 py-0.5 rounded font-semibold text-[10px] transition-colors ${
+                      viewMode === 'official'
+                        ? 'bg-white text-[#1877F2] shadow-xs'
+                        : 'text-[#65676B] hover:text-[#1C1E21]'
+                    }`}
+                  >
+                    Trang FB trực tiếp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('feed')}
+                    className={`px-2 py-0.5 rounded font-semibold text-[10px] transition-colors ${
+                      viewMode === 'feed'
+                        ? 'bg-white text-[#1877F2] shadow-xs'
+                        : 'text-[#65676B] hover:text-[#1C1E21]'
+                    }`}
+                  >
+                    Bản tin cuộn lướt
+                  </button>
+                </div>
+
                 <a
                   href={getFacebookHref()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:opacity-90 transition-opacity"
-                  title="Mở Facebook Cao Luật Decor"
+                  className="text-[#1877F2] hover:underline text-[10px] font-semibold flex items-center gap-0.5"
+                  title="Mở trang Facebook gốc"
                 >
-                  <div className="w-5 h-5 rounded-full bg-white text-[#1877F2] flex items-center justify-center font-bold text-xs">
-                    f
-                  </div>
-                  <span className="font-semibold text-[11px] tracking-wide">
-                    fb.com/caoluatdecor
-                  </span>
-                </a>
-                <a
-                  href={getFacebookHref()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
-                  title="Mở trang Facebook thực tế"
-                >
-                  <span>Mở trang</span>
+                  <Facebook className="w-3 h-3 fill-current" />
+                  <span>fb.com</span>
                   <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               </div>
 
-              {/* Vùng màn hình lướt bài viết (Scrollable Feed) */}
-              <div className="overflow-y-auto flex-1 p-2 space-y-2.5 text-xs bg-[#F0F2F5]">
+              {/* Chế độ 1: Iframe Plugin Facebook chính thức (Mặc định) */}
+              {viewMode === 'official' ? (
+                <div className="relative flex-1 bg-white overflow-hidden">
+                  {/* Lớp fallback lót phía dưới phòng khi Facebook đang tải hoặc bị chặn */}
+                  <div className="absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-b from-[#F0F2F5] to-white text-[#1C1E21]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-full bg-[#1877F2] text-white flex items-center justify-center font-bold shadow-sm shrink-0">
+                        <Facebook className="w-5 h-5 fill-current" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-[#1C1E21] leading-tight">
+                          {CONTACT_INFO.facebook.name}
+                        </h4>
+                        <p className="text-[10px] text-[#65676B]">
+                          Đang kết nối Facebook...
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <div className="w-5 h-5 border-2 border-[#1877F2] border-t-transparent rounded-full animate-spin mx-auto" />
+                      <p className="text-[10px] text-[#65676B]">
+                        Đang tải trang Facebook thực tế
+                      </p>
+                    </div>
+                    <a
+                      href={getFacebookHref()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-semibold text-xs transition-colors shadow-sm"
+                    >
+                      <Facebook className="w-3.5 h-3.5 fill-current" />
+                      <span>Mở trực tiếp trên Facebook</span>
+                    </a>
+                  </div>
+
+                  {/* Iframe Facebook Page Plugin chính thức kết nối nguyên trang thực tế */}
+                  <iframe
+                    title="Trang Facebook Cao Luật Decor chính thức"
+                    src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fprofile.php%3Fid%3D100094081195645&tabs=timeline&width=340&height=300&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 'none', overflow: 'hidden' }}
+                    scrolling="no"
+                    frameBorder="0"
+                    allowFullScreen={true}
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    loading="lazy"
+                    className="relative z-10 w-full h-full bg-white"
+                  />
+                </div>
+              ) : (
+                /* Chế độ 2: Bản tin cuộn lướt đầy đủ */
+                <div className="overflow-y-auto flex-1 p-2 space-y-2.5 text-xs bg-[#F0F2F5]">
                 {/* Header trang cá nhân / Fanpage */}
                 <div className="bg-white rounded-lg overflow-hidden border border-[#E4E6EB] shadow-xs">
                   {/* Ảnh bìa */}
@@ -448,8 +512,9 @@ export const Footer: React.FC = () => {
                   </a>
                 </div>
               </div>
-            </div>
+            )}
           </div>
+        </div>
 
           {/* CỘT 4: CHỈ ĐƯỜNG */}
           <div className="space-y-3 lg:border-l lg:border-[#E5E7EB] lg:pl-6">
