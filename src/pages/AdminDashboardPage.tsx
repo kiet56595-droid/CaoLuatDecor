@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Package, ShieldCheck, Bell, Eye, Trash2, CheckCircle,
-  XCircle, Clock, BarChart3, ArrowUpRight, Store,
-  LogOut, ChevronRight, RefreshCw, Plus, Check, MessageSquare
+  XCircle, Clock, BarChart3, Store,
+  LogOut, ChevronRight, RefreshCw, Plus, Check, MessageSquare, Download,
+  Edit, X, Search, PhoneCall, Mail, FileSpreadsheet, Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DBProfile, DBQuoteRequest, Product, UserRole, UserStatus } from '../types';
@@ -16,9 +17,13 @@ import {
   updateQuoteRequestStatus,
   deleteQuoteRequest,
   fetchProductsFromDB,
+  createProductInDB,
+  updateProductInDB,
   toggleProductStockInDB,
   deleteProductInDB,
   seedProductsToSupabase,
+  adminCreateUser,
+  exportQuotesToCSV,
 } from '../lib/supabase';
 
 type AdminTab = 'overview' | 'users' | 'products' | 'quotes' | 'settings';
@@ -74,6 +79,48 @@ export const AdminDashboardPage: React.FC = () => {
   const [dataLoading, setDataLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Bộ lọc Quotes
+  const [quoteFilter, setQuoteFilter] = useState<string>('all');
+  const [quoteSearch, setQuoteSearch] = useState<string>('');
+
+  // Bộ lọc Users
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
+
+  // Modal: Tạo user mới
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('CaoLuat@2024');
+  const [newUserRole, setNewUserRole] = useState<UserRole>('CUSTOMER');
+  const [creatingUser, setCreatingUser] = useState(false);
+
+  // Modal: Thêm / Sửa sản phẩm
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [prodFormName, setProdFormName] = useState('');
+  const [prodFormCat, setProdFormCat] = useState('sofa-phong-khach');
+  const [prodFormPrice, setProdFormPrice] = useState('');
+  const [prodFormCode, setProdFormCode] = useState('');
+  const [prodFormMaterial, setProdFormMaterial] = useState('');
+  const [prodFormDimensions, setProdFormDimensions] = useState('');
+  const [prodFormImage, setProdFormImage] = useState('');
+  const [prodFormDesc, setProdFormDesc] = useState('');
+  const [savingProduct, setSavingProduct] = useState(false);
+
+  // Modal: Xem chi tiết báo giá / Ghi chú admin
+  const [selectedQuote, setSelectedQuote] = useState<DBQuoteRequest | null>(null);
+  const [adminNoteInput, setAdminNoteInput] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+
+  // Settings Toggles (lưu vào localStorage)
+  const [systemSettings, setSystemSettings] = useState({
+    allowRegistration: true,
+    manualShopApproval: true,
+    emailNotifications: false,
+    maintenanceMode: false,
+  });
 
   const showNotice = (msg: string) => {
     setNotification(msg);
@@ -146,6 +193,34 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Tạo tài khoản mới từ Admin
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserEmail.trim() || !newUserName.trim()) return;
+
+    setCreatingUser(true);
+    const res = await adminCreateUser({
+      name: newUserName.trim(),
+      email: newUserEmail.trim(),
+      phone: newUserPhone.trim(),
+      password: newUserPassword.trim(),
+      role: newUserRole,
+      status: newUserRole === 'SHOP_OWNER' ? 'PENDING_APPROVAL' : 'ACTIVE',
+    });
+    setCreatingUser(false);
+
+    if (res.success) {
+      setShowCreateUserModal(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPhone('');
+      showNotice('Đã tạo tài khoản người dùng mới thành công!');
+      loadAllData();
+    } else {
+      showNotice(`Lỗi: ${res.error}`);
+    }
+  };
+
   // Hành động với Báo giá
   const handleUpdateQuoteStatus = async (quoteId: string, newStatus: string) => {
     const res = await updateQuoteRequestStatus(quoteId, newStatus);
@@ -153,15 +228,39 @@ export const AdminDashboardPage: React.FC = () => {
       setQuotes((prev) =>
         prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus } : q))
       );
+      if (selectedQuote && selectedQuote.id === quoteId) {
+        setSelectedQuote((prev) => (prev ? { ...prev, status: newStatus } : null));
+      }
       showNotice('Đã cập nhật trạng thái yêu cầu báo giá');
     }
   };
 
+  const handleSaveAdminNote = async () => {
+    if (!selectedQuote) return;
+    setSavingNote(true);
+    const res = await updateQuoteRequestStatus(
+      selectedQuote.id,
+      selectedQuote.status,
+      adminNoteInput
+    );
+    setSavingNote(false);
+    if (res.success) {
+      setQuotes((prev) =>
+        prev.map((q) =>
+          q.id === selectedQuote.id ? { ...q, admin_note: adminNoteInput } : q
+        )
+      );
+      setSelectedQuote((prev) => (prev ? { ...prev, admin_note: adminNoteInput } : null));
+      showNotice('Đã lưu ghi chú quản trị!');
+    }
+  };
+
   const handleDeleteQuote = async (quoteId: string) => {
-    if (!window.confirm('Xóa yêu cầu báo giá này?')) return;
+    if (!window.confirm('Xóa yêu cầu báo giá này khỏi database?')) return;
     const res = await deleteQuoteRequest(quoteId);
     if (res.success) {
       setQuotes((prev) => prev.filter((q) => q.id !== quoteId));
+      if (selectedQuote?.id === quoteId) setSelectedQuote(null);
       showNotice('Đã xóa yêu cầu báo giá');
     }
   };
@@ -186,6 +285,93 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Mở modal sửa sản phẩm
+  const handleOpenEditProduct = (p: Product) => {
+    setEditingProductId(p.id);
+    setProdFormName(p.name);
+    setProdFormCat(p.categoryId || 'sofa-phong-khach');
+    setProdFormPrice(p.price ? p.price.toString() : '');
+    setProdFormCode(p.code || '');
+    setProdFormMaterial(p.material || '');
+    setProdFormDimensions(p.dimensions || '');
+    setProdFormImage(p.images?.[0] || '');
+    setProdFormDesc(p.description || '');
+    setShowProductModal(true);
+  };
+
+  // Mở modal thêm sản phẩm mới
+  const handleOpenCreateProduct = () => {
+    setEditingProductId(null);
+    setProdFormName('');
+    setProdFormCat('sofa-phong-khach');
+    setProdFormPrice('');
+    setProdFormCode(`CL-${Math.floor(1000 + Math.random() * 9000)}`);
+    setProdFormMaterial('Gỗ tự nhiên cao cấp');
+    setProdFormDimensions('Theo kích thước thực tế');
+    setProdFormImage('');
+    setProdFormDesc('');
+    setShowProductModal(true);
+  };
+
+  // Lưu sản phẩm (Tạo mới hoặc Sửa)
+  const handleSaveProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodFormName.trim()) return;
+
+    setSavingProduct(true);
+    const parsedPrice = prodFormPrice ? Number(prodFormPrice.replace(/\D/g, '')) : null;
+    const defaultImg =
+      prodFormImage.trim() ||
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80';
+
+    if (editingProductId) {
+      // Cập nhật sản phẩm
+      const res = await updateProductInDB(editingProductId, {
+        name: prodFormFormTrim(prodFormName),
+        categoryId: prodFormCat,
+        price: parsedPrice,
+        material: prodFormMaterial.trim(),
+        dimensions: prodFormDimensions.trim(),
+        description: prodFormDesc.trim(),
+        images: [defaultImg],
+      });
+      setSavingProduct(false);
+      if (res.success) {
+        setShowProductModal(false);
+        showNotice('Đã cập nhật sản phẩm thành công!');
+        loadAllData();
+      } else {
+        showNotice(`Lỗi: ${res.error}`);
+      }
+    } else {
+      // Tạo mới sản phẩm
+      const res = await createProductInDB({
+        name: prodFormFormTrim(prodFormName),
+        code: prodFormCode.trim() || `CL-${Date.now().toString().slice(-4)}`,
+        categoryId: prodFormCat,
+        price: parsedPrice,
+        material: prodFormMaterial.trim(),
+        dimensions: prodFormDimensions.trim(),
+        description: prodFormDesc.trim(),
+        images: [defaultImg],
+        inStock: true,
+      });
+      setSavingProduct(false);
+      if (res.success) {
+        setShowProductModal(false);
+        showNotice('Đã thêm sản phẩm mới vào cơ sở dữ liệu!');
+        loadAllData();
+      } else {
+        showNotice(`Lỗi: ${res.error}`);
+      }
+    }
+  };
+
+  function prodFormFormTrim(str: string) {
+    return str.trim();
+  }
+
+  // Đồng bộ sản phẩm mẫu lên Supabase
   const handleSeedProducts = async () => {
     if (!window.confirm('Nạp toàn bộ danh mục sản phẩm mẫu lên Supabase Database?')) return;
     setSeeding(true);
@@ -199,6 +385,36 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Xuất file CSV báo cáo thực tế
+  const handleExportCSV = () => {
+    if (quotes.length === 0) {
+      showNotice('Chưa có dữ liệu báo giá để xuất báo cáo.');
+      return;
+    }
+    exportQuotesToCSV(quotes);
+    showNotice('Đã xuất file báo cáo CSV thành công!');
+  };
+
+  // Danh sách quotes sau khi lọc
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter((q) => {
+      const matchStatus = quoteFilter === 'all' || q.status === quoteFilter;
+      const qSearch = quoteSearch.toLowerCase().trim();
+      const matchSearch =
+        !qSearch ||
+        q.customer_name.toLowerCase().includes(qSearch) ||
+        q.phone.includes(qSearch) ||
+        (q.product_name && q.product_name.toLowerCase().includes(qSearch));
+      return matchStatus && matchSearch;
+    });
+  }, [quotes, quoteFilter, quoteSearch]);
+
+  // Danh sách users sau khi lọc
+  const filteredProfiles = useMemo(() => {
+    if (userRoleFilter === 'all') return profiles;
+    return profiles.filter((u) => u.role === userRoleFilter || u.status === userRoleFilter);
+  }, [profiles, userRoleFilter]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
@@ -211,7 +427,6 @@ export const AdminDashboardPage: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Thống kê thực tế từ Supabase
   const pendingQuotesCount = quotes.filter((q) => q.status === 'pending').length;
   const pendingShopsCount = profiles.filter((u) => u.status === 'PENDING_APPROVAL').length;
 
@@ -308,6 +523,14 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
+              onClick={handleExportCSV}
+              className="p-2 text-gray-600 hover:text-[#654329] hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-medium border border-gray-200"
+              title="Xuất file CSV báo cáo"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Xuất CSV</span>
+            </button>
+            <button
               onClick={loadAllData}
               disabled={dataLoading}
               className="p-2 text-gray-500 hover:text-[#654329] hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-medium"
@@ -377,7 +600,10 @@ export const AdminDashboardPage: React.FC = () => {
                     <p className="text-xs text-gray-400 font-medium">Xưởng chờ duyệt</p>
                     <p className="text-2xl font-bold text-gray-800 mt-0.5">{pendingShopsCount}</p>
                     <button
-                      onClick={() => setActiveTab('users')}
+                      onClick={() => {
+                        setUserRoleFilter('PENDING_APPROVAL');
+                        setActiveTab('users');
+                      }}
                       className="text-xs text-[#654329] font-semibold mt-1 hover:underline flex items-center gap-1"
                     >
                       Kiểm duyệt ngay <ChevronRight className="w-3.5 h-3.5" />
@@ -386,47 +612,107 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Danh sách báo giá mới nhất */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-800">Yêu cầu báo giá mới tiếp nhận từ khách</h3>
+              {/* Thao tác nhanh & Báo giá gần đây */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                  <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-800">Yêu cầu báo giá mới tiếp nhận từ khách</h3>
+                    <button
+                      onClick={() => setActiveTab('quotes')}
+                      className="text-xs text-[#654329] font-medium hover:underline flex items-center gap-1"
+                    >
+                      Xem tất cả ({quotes.length}) <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {quotes.length === 0 ? (
+                    <p className="text-center py-8 text-gray-400 text-sm">Chưa có yêu cầu báo giá nào trong database.</p>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {quotes.slice(0, 5).map((q) => {
+                        const qs = quoteStatusConfig[q.status] || quoteStatusConfig.pending;
+                        return (
+                          <div key={q.id} className="py-3 flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">
+                                {q.customer_name} — <span className="text-blue-600">{q.phone}</span>
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Sản phẩm: <span className="font-medium text-[#654329]">{q.product_name}</span>
+                                {q.note && ` — "${q.note}"`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${qs.color}`}>
+                                {qs.icon} {qs.label}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setSelectedQuote(q);
+                                  setAdminNoteInput(q.admin_note || '');
+                                }}
+                                className="text-xs text-[#654329] font-medium hover:underline"
+                              >
+                                Chi tiết
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Các nút hành động nhanh kết nối data */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
+                  <h3 className="font-semibold text-gray-800 pb-2 border-b border-gray-100">
+                    Thao tác nhanh CSDL
+                  </h3>
                   <button
-                    onClick={() => setActiveTab('quotes')}
-                    className="text-xs text-[#654329] font-medium hover:underline flex items-center gap-1"
+                    onClick={() => {
+                      setUserRoleFilter('PENDING_APPROVAL');
+                      setActiveTab('users');
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all"
                   >
-                    Xem tất cả ({quotes.length}) <ChevronRight className="w-4 h-4" />
+                    <span>Duyệt chủ shop mới</span>
+                    {pendingShopsCount > 0 && (
+                      <span className="bg-white text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full shadow-xs">
+                        {pendingShopsCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setQuoteFilter('pending');
+                      setActiveTab('quotes');
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all"
+                  >
+                    <span>Xử lý báo giá chờ</span>
+                    {pendingQuotesCount > 0 && (
+                      <span className="bg-white text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full shadow-xs">
+                        {pendingQuotesCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleOpenCreateProduct}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
+                  >
+                    <span>Thêm sản phẩm mới</span>
+                    <Plus className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={handleExportCSV}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all"
+                  >
+                    <span>Xuất báo cáo CSV</span>
+                    <FileSpreadsheet className="w-4 h-4" />
                   </button>
                 </div>
-                {quotes.length === 0 ? (
-                  <p className="text-center py-8 text-gray-400 text-sm">Chưa có yêu cầu báo giá nào trong database.</p>
-                ) : (
-                  <div className="divide-y divide-gray-50">
-                    {quotes.slice(0, 5).map((q) => {
-                      const qs = quoteStatusConfig[q.status] || quoteStatusConfig.pending;
-                      return (
-                        <div key={q.id} className="py-3 flex items-center justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">
-                              {q.customer_name} — <span className="text-blue-600">{q.phone}</span>
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              Sản phẩm: <span className="font-medium text-[#654329]">{q.product_name}</span>
-                              {q.note && ` — "${q.note}"`}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${qs.color}`}>
-                              {qs.icon} {qs.label}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {new Date(q.created_at).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -434,10 +720,29 @@ export const AdminDashboardPage: React.FC = () => {
           {/* ── TAB 2: USERS (PROFILES) ── */}
           {activeTab === 'users' && (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-gray-800">Quản lý Tài khoản (Bảng `profiles`)</h3>
-                  <p className="text-xs text-gray-400">Quản lý phân quyền, duyệt đối tác xưởng và khóa tài khoản</p>
+                  <p className="text-xs text-gray-400">Duyệt xưởng, phân quyền và quản lý tài khoản người dùng</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <select
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg bg-gray-50"
+                  >
+                    <option value="all">Tất cả ({profiles.length})</option>
+                    <option value="CUSTOMER">Khách hàng</option>
+                    <option value="SHOP_OWNER">Chủ xưởng</option>
+                    <option value="PENDING_APPROVAL">Chờ duyệt ({pendingShopsCount})</option>
+                    <option value="BANNED">Đã khóa</option>
+                  </select>
+                  <button
+                    onClick={() => setShowCreateUserModal(true)}
+                    className="bg-[#654329] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#533722] transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tạo tài khoản mới
+                  </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -453,7 +758,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {profiles.map((u) => (
+                    {filteredProfiles.map((u) => (
                       <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -466,7 +771,7 @@ export const AdminDashboardPage: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">{u.phone || '—'}</td>
+                        <td className="px-6 py-4 text-gray-600 font-mono text-xs">{u.phone || '—'}</td>
                         <td className="px-6 py-4">
                           <select
                             value={u.role}
@@ -542,13 +847,12 @@ export const AdminDashboardPage: React.FC = () => {
                     <RefreshCw className={`w-3.5 h-3.5 ${seeding ? 'animate-spin' : ''}`} />
                     {seeding ? 'Đang nạp...' : 'Nạp dữ liệu mẫu lên Supabase'}
                   </button>
-                  <a
-                    href="/san-pham"
-                    target="_blank"
+                  <button
+                    onClick={handleOpenCreateProduct}
                     className="bg-[#654329] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#533722] transition-colors flex items-center gap-1.5"
                   >
-                    <Eye className="w-3.5 h-3.5" /> Xem ngoài website
-                  </a>
+                    <Plus className="w-3.5 h-3.5" /> Thêm sản phẩm mới
+                  </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -597,13 +901,31 @@ export const AdminDashboardPage: React.FC = () => {
                           </button>
                         </td>
                         <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleDeleteProduct(p)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title="Xóa sản phẩm"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <a
+                              href={`/san-pham/${p.slug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              title="Xem trang sản phẩm"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={() => handleOpenEditProduct(p)}
+                              className="p-1.5 text-gray-500 hover:text-[#654329] hover:bg-[#FAF8F5] rounded-lg transition-all"
+                              title="Chỉnh sửa sản phẩm"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(p)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              title="Xóa sản phẩm"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -616,12 +938,57 @@ export const AdminDashboardPage: React.FC = () => {
           {/* ── TAB 4: QUOTES ── */}
           {activeTab === 'quotes' && (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-800">Yêu cầu Báo giá (Bảng `quote_requests`)</h3>
-                  <p className="text-xs text-gray-400">Danh sách khách hàng điền form yêu cầu tư vấn trên website</p>
+              <div className="px-6 py-4 border-b border-gray-100 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Yêu cầu Báo giá (Bảng `quote_requests`)</h3>
+                    <p className="text-xs text-gray-400">Danh sách khách hàng điền form tư vấn trên website</p>
+                  </div>
+                  <button
+                    onClick={handleExportCSV}
+                    className="bg-[#FAF8F5] border border-[#654329] text-[#654329] text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#F7F3ED] transition-colors flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Xuất file CSV
+                  </button>
+                </div>
+
+                {/* Thanh tìm kiếm & lọc status */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { key: 'all', label: 'Tất cả', count: quotes.length },
+                      { key: 'pending', label: 'Chờ xử lý', count: pendingQuotesCount },
+                      { key: 'contacted', label: 'Đã liên hệ', count: quotes.filter((q) => q.status === 'contacted').length },
+                      { key: 'completed', label: 'Đã hoàn thành', count: quotes.filter((q) => q.status === 'completed').length },
+                      { key: 'cancelled', label: 'Đã hủy', count: quotes.filter((q) => q.status === 'cancelled').length },
+                    ].map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => setQuoteFilter(f.key)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          quoteFilter === f.key
+                            ? 'bg-[#654329] text-white shadow-xs'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {f.label} ({f.count})
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Tìm tên, SĐT, sản phẩm..."
+                      value={quoteSearch}
+                      onChange={(e) => setQuoteSearch(e.target.value)}
+                      className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs w-56 bg-gray-50 focus:bg-white focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
@@ -629,14 +996,14 @@ export const AdminDashboardPage: React.FC = () => {
                       <th className="px-6 py-3 text-left">Khách hàng</th>
                       <th className="px-6 py-3 text-left">Số điện thoại</th>
                       <th className="px-6 py-3 text-left">Sản phẩm quan tâm</th>
-                      <th className="px-6 py-3 text-left">Ghi chú</th>
+                      <th className="px-6 py-3 text-left">Ghi chú khách</th>
                       <th className="px-6 py-3 text-left">Trạng thái</th>
                       <th className="px-6 py-3 text-left">Ngày gửi</th>
                       <th className="px-6 py-3 text-left">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {quotes.map((q) => {
+                    {filteredQuotes.map((q) => {
                       const qs = quoteStatusConfig[q.status] || quoteStatusConfig.pending;
                       return (
                         <tr key={q.id} className="hover:bg-gray-50/50 transition-colors">
@@ -667,13 +1034,25 @@ export const AdminDashboardPage: React.FC = () => {
                             {new Date(q.created_at).toLocaleDateString('vi-VN')}
                           </td>
                           <td className="px-6 py-4">
-                            <button
-                              onClick={() => handleDeleteQuote(q.id)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                              title="Xóa yêu cầu"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setSelectedQuote(q);
+                                  setAdminNoteInput(q.admin_note || '');
+                                }}
+                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Xem chi tiết & Ghi chú"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteQuote(q.id)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                title="Xóa yêu cầu"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -689,7 +1068,66 @@ export const AdminDashboardPage: React.FC = () => {
             <div className="max-w-2xl space-y-6">
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
                 <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#654329]" /> Kết nối Supabase PostgreSQL
+                  <ShieldCheck className="w-5 h-5 text-[#654329]" /> Cấu hình chức năng hệ thống
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    {
+                      key: 'allowRegistration',
+                      label: 'Cho phép đăng ký tài khoản tự do',
+                      desc: 'Khách hàng có thể tự đăng ký tài khoản qua Supabase Auth',
+                    },
+                    {
+                      key: 'manualShopApproval',
+                      label: 'Duyệt chủ shop / xưởng thủ công',
+                      desc: 'Tài khoản xưởng mới sẽ ở trạng thái PENDING_APPROVAL chờ duyệt',
+                    },
+                    {
+                      key: 'emailNotifications',
+                      label: 'Thông báo báo giá qua Email',
+                      desc: 'Gửi email cho ban quản lý mỗi khi có khách gửi biểu mẫu',
+                    },
+                    {
+                      key: 'maintenanceMode',
+                      label: 'Chế độ bảo trì hệ thống',
+                      desc: 'Tạm ngưng tiếp nhận yêu cầu để nâng cấp CSDL',
+                    },
+                  ].map((item) => {
+                    const isEnabled = (systemSettings as any)[item.key];
+                    return (
+                      <div
+                        key={item.key}
+                        className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{item.label}</p>
+                          <p className="text-xs text-gray-400">{item.desc}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const next = !isEnabled;
+                            setSystemSettings((prev) => ({ ...prev, [item.key]: next }));
+                            showNotice(`Đã ${next ? 'bật' : 'tắt'} cấu hình: ${item.label}`);
+                          }}
+                          className={`w-11 h-6 rounded-full relative transition-colors p-0.5 ${
+                            isEnabled ? 'bg-[#654329]' : 'bg-gray-200'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                              isEnabled ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Store className="w-5 h-5 text-[#654329]" /> Kết nối Supabase PostgreSQL
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between py-2 border-b border-gray-50">
@@ -705,7 +1143,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <div className="flex justify-between py-2 border-b border-gray-50">
                     <span className="text-gray-500">Quyền hạn tài khoản</span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">
-                      ADMIN (Toàn quyền)
+                      ADMIN (Toàn quyền quản trị)
                     </span>
                   </div>
                 </div>
@@ -714,6 +1152,316 @@ export const AdminDashboardPage: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* Modal: Tạo tài khoản người dùng mới */}
+      {showCreateUserModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-bold text-base text-gray-800">Tạo tài khoản người dùng mới</h3>
+              <button onClick={() => setShowCreateUserModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateUserSubmit} className="mt-4 space-y-3 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Họ và tên *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Trần Văn Hoàng"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Địa chỉ Email *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="email@example.com"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Số điện thoại</label>
+                <input
+                  type="tel"
+                  placeholder="0901234567"
+                  value={newUserPhone}
+                  onChange={(e) => setNewUserPhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Mật khẩu khởi tạo</label>
+                <input
+                  type="text"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Vai trò hệ thống</label>
+                <select
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value as UserRole)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                >
+                  <option value="CUSTOMER">CUSTOMER (Khách hàng thành viên)</option>
+                  <option value="SHOP_OWNER">SHOP_OWNER (Chủ xưởng/Đối tác)</option>
+                  <option value="ADMIN">ADMIN (Quản trị viên toàn hệ thống)</option>
+                </select>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateUserModal(false)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingUser}
+                  className="px-5 py-2 bg-[#654329] text-white rounded-lg text-xs font-semibold hover:bg-[#533722] disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  {creatingUser ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  {creatingUser ? 'Đang tạo...' : 'Tạo tài khoản'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Thêm hoặc Sửa sản phẩm */}
+      {showProductModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-bold text-base text-gray-800">
+                {editingProductId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới vào CSDL'}
+              </h3>
+              <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveProductSubmit} className="mt-4 space-y-3 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Tên sản phẩm *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Bàn Trà Đôi Mặt Đá Ceramic"
+                  value={prodFormName}
+                  onChange={(e) => setProdFormName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Danh mục</label>
+                  <select
+                    value={prodFormCat}
+                    onChange={(e) => setProdFormCat(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                  >
+                    <option value="sofa-phong-khach">Sofa Phòng Khách</option>
+                    <option value="ban-tra">Bàn Trà</option>
+                    <option value="ke-tivi">Kệ Tivi</option>
+                    <option value="ban-an-ghe-an">Bàn Ăn & Ghế Ăn</option>
+                    <option value="giuong-ngu">Giường Ngủ</option>
+                    <option value="tu-quan-ao">Tủ Quần Áo</option>
+                    <option value="tu-bep">Tủ Bếp</option>
+                    <option value="noi-that-van-phong">Nội Thất Văn Phòng</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Giá bán (VNĐ)</label>
+                  <input
+                    type="number"
+                    placeholder="12500000"
+                    value={prodFormPrice}
+                    onChange={(e) => setProdFormPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Chất liệu</label>
+                  <input
+                    type="text"
+                    placeholder="Gỗ sồi Nga, đá marble..."
+                    value={prodFormMaterial}
+                    onChange={(e) => setProdFormMaterial(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Kích thước</label>
+                  <input
+                    type="text"
+                    placeholder="Dài x Rộng x Cao"
+                    value={prodFormDimensions}
+                    onChange={(e) => setProdFormDimensions(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Link ảnh đại diện (URL)</label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/..."
+                  value={prodFormImage}
+                  onChange={(e) => setProdFormImage(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Mô tả sản phẩm</label>
+                <textarea
+                  rows={2}
+                  placeholder="Thông số, xuất xứ và quy cách đóng gói..."
+                  value={prodFormDesc}
+                  onChange={(e) => setProdFormDesc(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowProductModal(false)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingProduct}
+                  className="px-5 py-2 bg-[#654329] text-white rounded-lg text-xs font-semibold hover:bg-[#533722] disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  {savingProduct ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  {savingProduct ? 'Đang lưu...' : 'Lưu vào CSDL'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Xem chi tiết báo giá và Ghi chú nội bộ */}
+      {selectedQuote && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-bold text-base text-gray-800">
+                Chi tiết yêu cầu báo giá #{selectedQuote.id.slice(0, 8)}
+              </h3>
+              <button onClick={() => setSelectedQuote(null)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                <div>
+                  <span className="text-xs text-gray-400 block">Khách hàng</span>
+                  <p className="font-semibold text-gray-800">{selectedQuote.customer_name}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block">Số điện thoại</span>
+                  <a href={`tel:${selectedQuote.phone}`} className="font-semibold text-blue-600 hover:underline">
+                    {selectedQuote.phone}
+                  </a>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block">Sản phẩm quan tâm</span>
+                  <p className="font-medium text-[#654329]">{selectedQuote.product_name}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 block">Thời gian gửi</span>
+                  <p className="text-xs text-gray-600">{new Date(selectedQuote.created_at).toLocaleString('vi-VN')}</p>
+                </div>
+              </div>
+
+              {selectedQuote.note && (
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 block mb-1">Ghi chú của khách:</span>
+                  <p className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg text-xs text-gray-700">
+                    "{selectedQuote.note}"
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <span className="text-xs font-semibold text-gray-500 block mb-1">Trạng thái xử lý:</span>
+                <select
+                  value={selectedQuote.status}
+                  onChange={(e) => handleUpdateQuoteStatus(selectedQuote.id, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-gray-50 font-semibold"
+                >
+                  <option value="pending">Chờ xử lý</option>
+                  <option value="contacted">Đã liên hệ tư vấn</option>
+                  <option value="completed">Đã hoàn thành</option>
+                  <option value="cancelled">Đã hủy</option>
+                </select>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold text-gray-500 block mb-1">Ghi chú nội bộ Admin:</span>
+                <textarea
+                  rows={3}
+                  placeholder="Ghi lại tiến độ tư vấn, báo giá, hoặc lịch hẹn đo đạc thực tế..."
+                  value={adminNoteInput}
+                  onChange={(e) => setAdminNoteInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-gray-50 focus:bg-white"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-between items-center border-t border-gray-100">
+                <button
+                  onClick={() => handleDeleteQuote(selectedQuote.id)}
+                  className="text-xs text-red-600 hover:underline flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Xóa yêu cầu này
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedQuote(null)}
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-xs text-gray-600"
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    onClick={handleSaveAdminNote}
+                    disabled={savingNote}
+                    className="px-4 py-2 bg-[#654329] text-white rounded-lg text-xs font-semibold hover:bg-[#533722]"
+                  >
+                    {savingNote ? 'Đang lưu...' : 'Lưu ghi chú'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

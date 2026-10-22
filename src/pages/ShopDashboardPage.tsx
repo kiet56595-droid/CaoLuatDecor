@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, MessageSquare, Star,
   Plus, Eye, Edit, ToggleLeft, ToggleRight,
   Bell, LogOut, Store, CheckCircle, Clock, XCircle,
-  ArrowUpRight, RefreshCw, Trash2, Check, X
+  ArrowUpRight, RefreshCw, Trash2, Check, X, Search, Loader2, Camera,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DBQuoteRequest, DBReview, Product } from '../types';
@@ -14,6 +15,7 @@ import {
   fetchProductsFromDB,
   toggleProductStockInDB,
   createProductInDB,
+  updateProductInDB,
   deleteProductInDB,
   fetchReviewsFromDB,
   seedProductsToSupabase,
@@ -47,19 +49,34 @@ export const ShopDashboardPage: React.FC = () => {
   const [seeding, setSeeding] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Modal thêm sản phẩm
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newProdName, setNewProdName] = useState('');
-  const [newProdCategory, setNewProdCategory] = useState('sofa-phong-khach');
-  const [newProdPrice, setNewProdPrice] = useState('');
-  const [newProdMaterial, setNewProdMaterial] = useState('');
-  const [newProdImage, setNewProdImage] = useState('');
-  const [newProdDesc, setNewProdDesc] = useState('');
-  const [addingProduct, setAddingProduct] = useState(false);
+  // Quotes filter & search
+  const [quoteFilter, setQuoteFilter] = useState('all');
+  const [quoteSearch, setQuoteSearch] = useState('');
 
-  // Shop Profile state
+  // Modal: Thêm / Sửa sản phẩm
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [prodName, setProdName] = useState('');
+  const [prodCategory, setProdCategory] = useState('sofa-phong-khach');
+  const [prodPrice, setProdPrice] = useState('');
+  const [prodMaterial, setProdMaterial] = useState('');
+  const [prodDimensions, setProdDimensions] = useState('');
+  const [prodImage, setProdImage] = useState('');
+  const [prodDesc, setProdDesc] = useState('');
+  const [savingProduct, setSavingProduct] = useState(false);
+
+  // Modal: Phản hồi báo giá
+  const [selectedQuote, setSelectedQuote] = useState<DBQuoteRequest | null>(null);
+  const [replyNote, setReplyNote] = useState('');
+  const [replyStatus, setReplyStatus] = useState('contacted');
+  const [savingReply, setSavingReply] = useState(false);
+
+  // Modal: Cập nhật hồ sơ xưởng
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [shopNameInput, setShopNameInput] = useState(user?.shopId || 'Xưởng Mộc Cao Luật');
-  const [savingShopInfo, setSavingShopInfo] = useState(false);
+  const [shopPhoneInput, setShopPhoneInput] = useState(user?.phone || '');
+  const [shopAddressInput, setShopAddressInput] = useState(user?.address || '');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const showNotification = (msg: string) => {
     setNotice(msg);
@@ -103,7 +120,7 @@ export const ShopDashboardPage: React.FC = () => {
 
   // Hành động xóa sản phẩm
   const handleDeleteProduct = async (product: Product) => {
-    if (!window.confirm(`Xóa sản phẩm "${product.name}"?`)) return;
+    if (!window.confirm(`Xóa sản phẩm "${product.name}" khỏi CSDL?`)) return;
     const res = await deleteProductInDB(product.id);
     if (res.success) {
       setProducts((prev) => prev.filter((p) => p.id !== product.id));
@@ -111,51 +128,109 @@ export const ShopDashboardPage: React.FC = () => {
     }
   };
 
-  // Thêm sản phẩm mới vào Supabase
-  const handleCreateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProdName.trim()) return;
+  // Mở modal Thêm mới
+  const handleOpenAddModal = () => {
+    setEditingProductId(null);
+    setProdName('');
+    setProdCategory('sofa-phong-khach');
+    setProdPrice('');
+    setProdMaterial('Gỗ tự nhiên cao cấp');
+    setProdDimensions('Kích thước theo yêu cầu');
+    setProdImage('');
+    setProdDesc('');
+    setShowProductModal(true);
+  };
 
-    setAddingProduct(true);
-    const parsedPrice = newProdPrice ? Number(newProdPrice.replace(/\D/g, '')) : null;
+  // Mở modal Sửa
+  const handleOpenEditModal = (p: Product) => {
+    setEditingProductId(p.id);
+    setProdName(p.name);
+    setProdCategory(p.categoryId || 'sofa-phong-khach');
+    setProdPrice(p.price ? p.price.toString() : '');
+    setProdMaterial(p.material || '');
+    setProdDimensions(p.dimensions || '');
+    setProdImage(p.images?.[0] || '');
+    setProdDesc(p.description || '');
+    setShowProductModal(true);
+  };
+
+  // Lưu sản phẩm (Thêm hoặc Sửa)
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodName.trim()) return;
+
+    setSavingProduct(true);
+    const parsedPrice = prodPrice ? Number(prodPrice.replace(/\D/g, '')) : null;
     const defaultImg =
-      newProdImage.trim() ||
+      prodImage.trim() ||
       'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80';
 
-    const res = await createProductInDB({
-      name: newProdName.trim(),
-      categoryId: newProdCategory,
-      price: parsedPrice,
-      material: newProdMaterial.trim() || 'Gỗ tự nhiên cao cấp',
-      images: [defaultImg],
-      description: newProdDesc.trim() || 'Sản phẩm nội thất sản xuất trực tiếp từ xưởng.',
-      shopId: user?.id,
-      inStock: true,
-    });
-
-    setAddingProduct(false);
-    if (res.success) {
-      setShowAddModal(false);
-      setNewProdName('');
-      setNewProdPrice('');
-      setNewProdMaterial('');
-      setNewProdImage('');
-      setNewProdDesc('');
-      showNotification('Thêm sản phẩm mới thành công vào Database!');
-      loadShopData();
+    if (editingProductId) {
+      const res = await updateProductInDB(editingProductId, {
+        name: prodName.trim(),
+        categoryId: prodCategory,
+        price: parsedPrice,
+        material: prodMaterial.trim(),
+        dimensions: prodDimensions.trim(),
+        description: prodDesc.trim(),
+        images: [defaultImg],
+      });
+      setSavingProduct(false);
+      if (res.success) {
+        setShowProductModal(false);
+        showNotification('Đã cập nhật sản phẩm thành công!');
+        loadShopData();
+      } else {
+        showNotification(`Lỗi: ${res.error}`);
+      }
     } else {
-      showNotification(`Lỗi: ${res.error}`);
+      const res = await createProductInDB({
+        name: prodName.trim(),
+        categoryId: prodCategory,
+        price: parsedPrice,
+        material: prodMaterial.trim(),
+        dimensions: prodDimensions.trim(),
+        images: [defaultImg],
+        description: prodDesc.trim(),
+        shopId: user?.id,
+        inStock: true,
+      });
+      setSavingProduct(false);
+      if (res.success) {
+        setShowProductModal(false);
+        showNotification('Thêm sản phẩm mới thành công vào Database!');
+        loadShopData();
+      } else {
+        showNotification(`Lỗi: ${res.error}`);
+      }
     }
   };
 
-  // Cập nhật trạng thái báo giá
-  const handleUpdateQuote = async (quoteId: string, newStatus: string) => {
-    const res = await updateQuoteRequestStatus(quoteId, newStatus);
+  // Lưu phản hồi báo giá
+  const handleSaveReplyQuote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedQuote) return;
+
+    setSavingReply(true);
+    const res = await updateQuoteRequestStatus(
+      selectedQuote.id,
+      replyStatus,
+      replyNote.trim()
+    );
+    setSavingReply(false);
+
     if (res.success) {
       setQuotes((prev) =>
-        prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus } : q))
+        prev.map((q) =>
+          q.id === selectedQuote.id
+            ? { ...q, status: replyStatus, admin_note: replyNote.trim() }
+            : q
+        )
       );
-      showNotification('Đã cập nhật trạng thái báo giá');
+      setSelectedQuote(null);
+      showNotification('Đã gửi phản hồi và cập nhật tiến độ báo giá!');
+    } else {
+      showNotification(`Lỗi: ${res.error}`);
     }
   };
 
@@ -174,12 +249,32 @@ export const ShopDashboardPage: React.FC = () => {
   };
 
   // Cập nhật thông tin xưởng
-  const handleSaveShopProfile = async () => {
-    setSavingShopInfo(true);
-    await updateProfile({ shopId: shopNameInput });
-    setSavingShopInfo(false);
-    showNotification('Đã lưu thông tin xưởng thành công!');
+  const handleSaveShopProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    await updateProfile({
+      shopId: shopNameInput.trim(),
+      phone: shopPhoneInput.trim(),
+      address: shopAddressInput.trim(),
+    });
+    setSavingProfile(false);
+    setShowProfileModal(false);
+    showNotification('Đã lưu thông tin xưởng vào Database!');
   };
+
+  // Lọc Quotes
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter((q) => {
+      const matchStatus = quoteFilter === 'all' || q.status === quoteFilter;
+      const qSearch = quoteSearch.toLowerCase().trim();
+      const matchSearch =
+        !qSearch ||
+        q.customer_name.toLowerCase().includes(qSearch) ||
+        q.phone.includes(qSearch) ||
+        (q.product_name && q.product_name.toLowerCase().includes(qSearch));
+      return matchStatus && matchSearch;
+    });
+  }, [quotes, quoteFilter, quoteSearch]);
 
   if (isLoading) {
     return (
@@ -240,7 +335,7 @@ export const ShopDashboardPage: React.FC = () => {
               onClick={() => setActiveTab(tab)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab
-                  ? 'bg-[#F7F3ED] text-[#654329] font-semibold'
+                  ? 'bg-[#F7F3ED] text-[#654329] font-semibold shadow-xs'
                   : 'text-[#473E37] hover:bg-[#FAF8F5] hover:text-[#654329]'
               }`}
             >
@@ -292,10 +387,10 @@ export const ShopDashboardPage: React.FC = () => {
               title="Tải lại dữ liệu từ CSDL"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${dataLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Làm mới</span>
+              <span className="hidden sm:inline">Làm mới CSDL</span>
             </button>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={handleOpenAddModal}
               className="bg-[#654329] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#533722] transition-colors flex items-center gap-2 font-medium"
             >
               <Plus className="w-4 h-4" /> Thêm sản phẩm
@@ -354,7 +449,12 @@ export const ShopDashboardPage: React.FC = () => {
                     <p className="text-sm font-bold text-[#29231F] mt-1 truncate max-w-[150px]">
                       {user.shopId || 'Xưởng Cao Luật'}
                     </p>
-                    <p className="text-xs text-green-600 font-medium mt-1">✓ Đã xác thực CSDL</p>
+                    <button
+                      onClick={() => setShowProfileModal(true)}
+                      className="text-xs text-[#654329] font-medium mt-1 hover:underline flex items-center gap-1"
+                    >
+                      Cài đặt xưởng <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -367,7 +467,7 @@ export const ShopDashboardPage: React.FC = () => {
                     onClick={() => setActiveTab('quotes')}
                     className="text-xs text-[#654329] font-medium hover:underline flex items-center gap-1"
                   >
-                    Xem tất cả ({quotes.length})
+                    Xem tất cả ({quotes.length}) <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 {quotes.length === 0 ? (
@@ -384,11 +484,24 @@ export const ShopDashboardPage: React.FC = () => {
                             </p>
                             <p className="text-xs text-[#877B70] mt-0.5">
                               Quan tâm: <span className="font-medium text-[#654329]">{q.product_name}</span>
+                              {q.note && ` — "${q.note}"`}
                             </p>
                           </div>
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${qs.color}`}>
-                            {qs.icon} {qs.label}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${qs.color}`}>
+                              {qs.icon} {qs.label}
+                            </span>
+                            <button
+                              onClick={() => {
+                                setSelectedQuote(q);
+                                setReplyNote(q.admin_note || '');
+                                setReplyStatus(q.status === 'pending' ? 'contacted' : q.status);
+                              }}
+                              className="text-xs text-[#654329] font-semibold px-2.5 py-1 bg-[#FAF8F5] border border-[#E7DCce] rounded hover:bg-[#F7F3ED]"
+                            >
+                              Phản hồi
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -396,25 +509,18 @@ export const ShopDashboardPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Thông tin hồ sơ xưởng */}
-              <div className="bg-white rounded-xl border border-[#E7DCce] p-6 shadow-sm">
-                <h3 className="font-semibold text-[#29231F] mb-3">Cài đặt thông tin thương hiệu Xưởng</h3>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    value={shopNameInput}
-                    onChange={(e) => setShopNameInput(e.target.value)}
-                    placeholder="Tên xưởng của bạn..."
-                    className="flex-1 px-4 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5] focus:outline-none focus:ring-2 focus:ring-[#654329]/30"
-                  />
-                  <button
-                    onClick={handleSaveShopProfile}
-                    disabled={savingShopInfo}
-                    className="bg-[#654329] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#533722] transition-colors"
-                  >
-                    {savingShopInfo ? 'Đang lưu...' : 'Lưu tên xưởng'}
-                  </button>
+              {/* Banner cập nhật xưởng */}
+              <div className="bg-gradient-to-r from-[#654329] to-[#8B5E3C] rounded-2xl p-6 text-white flex items-center justify-between shadow-md">
+                <div>
+                  <p className="font-serif text-xl font-bold">Hồ sơ xưởng: {user.shopId || 'Cao Luật Decor'}</p>
+                  <p className="text-white/80 text-sm mt-1">Cập nhật hotline, địa chỉ xưởng sản xuất để khách hàng dễ dàng liên hệ may đo.</p>
                 </div>
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="bg-white text-[#654329] font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-white/90 transition-colors flex items-center gap-2 shrink-0 shadow-sm"
+                >
+                  <Camera className="w-4 h-4" /> Cập nhật xưởng
+                </button>
               </div>
             </div>
           )}
@@ -437,7 +543,7 @@ export const ShopDashboardPage: React.FC = () => {
                     {seeding ? 'Đang đồng bộ...' : 'Nạp sản phẩm mẫu xưởng'}
                   </button>
                   <button
-                    onClick={() => setShowAddModal(true)}
+                    onClick={handleOpenAddModal}
                     className="bg-[#654329] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#533722] transition-colors flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" /> Thêm sản phẩm mới
@@ -488,13 +594,31 @@ export const ShopDashboardPage: React.FC = () => {
                           </button>
                         </td>
                         <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleDeleteProduct(p)}
-                            className="p-1.5 text-[#877B70] hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title="Xóa sản phẩm"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <a
+                              href={`/san-pham/${p.slug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 text-[#877B70] hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              title="Xem trang sản phẩm"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={() => handleOpenEditModal(p)}
+                              className="p-1.5 text-[#877B70] hover:text-[#654329] hover:bg-[#F7F3ED] rounded-lg transition-all"
+                              title="Chỉnh sửa sản phẩm"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(p)}
+                              className="p-1.5 text-[#877B70] hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              title="Xóa sản phẩm"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -507,12 +631,51 @@ export const ShopDashboardPage: React.FC = () => {
           {/* ── QUOTES TAB ── */}
           {activeTab === 'quotes' && (
             <div className="bg-white rounded-xl border border-[#E7DCce] shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#E7DCce] flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-[#29231F]">Danh sách yêu cầu báo giá từ khách</h3>
-                  <p className="text-xs text-[#877B70]">Cập nhật trạng thái sau khi đã gọi điện hoặc chốt hợp đồng</p>
+              <div className="px-6 py-4 border-b border-[#E7DCce] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-[#29231F]">Danh sách yêu cầu báo giá từ khách</h3>
+                    <p className="text-xs text-[#877B70]">Cập nhật trạng thái sau khi đã gọi điện hoặc chốt hợp đồng</p>
+                  </div>
+                </div>
+
+                {/* Bộ lọc trạng thái & Search */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { key: 'all', label: 'Tất cả' },
+                      { key: 'pending', label: 'Chờ xử lý' },
+                      { key: 'contacted', label: 'Đã liên hệ' },
+                      { key: 'completed', label: 'Đã chốt' },
+                      { key: 'cancelled', label: 'Đã hủy' },
+                    ].map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => setQuoteFilter(f.key)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          quoteFilter === f.key
+                            ? 'bg-[#654329] text-white shadow-xs'
+                            : 'bg-[#FAF8F5] text-[#473E37] border border-[#E7DCce] hover:bg-[#F7F3ED]'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Tìm tên, SĐT khách..."
+                      value={quoteSearch}
+                      onChange={(e) => setQuoteSearch(e.target.value)}
+                      className="pl-8 pr-3 py-1.5 border border-[#D5C3AF] rounded-lg text-xs w-56 bg-[#FAF8F5] focus:bg-white focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-[#FAF8F5] text-xs text-[#877B70] uppercase tracking-wider">
@@ -520,13 +683,13 @@ export const ShopDashboardPage: React.FC = () => {
                       <th className="px-6 py-3 text-left">Khách hàng</th>
                       <th className="px-6 py-3 text-left">Số điện thoại</th>
                       <th className="px-6 py-3 text-left">Sản phẩm</th>
-                      <th className="px-6 py-3 text-left">Ghi chú</th>
+                      <th className="px-6 py-3 text-left">Ghi chú khách</th>
                       <th className="px-6 py-3 text-left">Trạng thái xử lý</th>
-                      <th className="px-6 py-3 text-left">Thời gian</th>
+                      <th className="px-6 py-3 text-left">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F7F3ED]">
-                    {quotes.map((q) => {
+                    {filteredQuotes.map((q) => {
                       const qs = quoteStatusConfig[q.status] || quoteStatusConfig.pending;
                       return (
                         <tr key={q.id} className="hover:bg-[#FAF8F5]/60 transition-colors">
@@ -539,19 +702,21 @@ export const ShopDashboardPage: React.FC = () => {
                           <td className="px-6 py-4 text-[#654329] font-medium">{q.product_name}</td>
                           <td className="px-6 py-4 text-xs text-[#877B70] max-w-xs truncate">{q.note || '—'}</td>
                           <td className="px-6 py-4">
-                            <select
-                              value={q.status}
-                              onChange={(e) => handleUpdateQuote(q.id, e.target.value)}
-                              className={`text-xs font-semibold px-2.5 py-1 rounded border border-[#E7DCce] ${qs.color}`}
-                            >
-                              <option value="pending">Chờ xử lý</option>
-                              <option value="contacted">Đã liên hệ tư vấn</option>
-                              <option value="completed">Đã chốt hợp đồng</option>
-                              <option value="cancelled">Đã hủy</option>
-                            </select>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${qs.color}`}>
+                              {qs.icon} {qs.label}
+                            </span>
                           </td>
-                          <td className="px-6 py-4 text-xs text-[#877B70]">
-                            {new Date(q.created_at).toLocaleDateString('vi-VN')}
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => {
+                                setSelectedQuote(q);
+                                setReplyNote(q.admin_note || '');
+                                setReplyStatus(q.status === 'pending' ? 'contacted' : q.status);
+                              }}
+                              className="px-3 py-1 bg-[#654329] text-white rounded-md text-xs font-semibold hover:bg-[#533722] transition-colors flex items-center gap-1"
+                            >
+                              <MessageSquare className="w-3 h-3" /> Phản hồi
+                            </button>
                           </td>
                         </tr>
                       );
@@ -600,21 +765,23 @@ export const ShopDashboardPage: React.FC = () => {
         </main>
       </div>
 
-      {/* Modal Thêm sản phẩm mới */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      {/* Modal Thêm hoặc Sửa sản phẩm */}
+      {showProductModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#E7DCce]">
-            <div className="flex items-center justify-between pb-4 border-b border-[#E7DCce]">
-              <h3 className="font-bold text-lg text-[#29231F]">Thêm sản phẩm mới vào Xưởng</h3>
+            <div className="flex items-center justify-between pb-3 border-b border-[#E7DCce]">
+              <h3 className="font-bold text-base text-[#29231F]">
+                {editingProductId ? 'Chỉnh sửa sản phẩm xưởng' : 'Thêm sản phẩm mới vào Xưởng'}
+              </h3>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => setShowProductModal(false)}
                 className="p-1 text-gray-400 hover:text-gray-700 rounded-md"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateProduct} className="mt-4 space-y-4">
+            <form onSubmit={handleSaveProduct} className="mt-4 space-y-3 text-sm">
               <div>
                 <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
                   Tên sản phẩm *
@@ -623,8 +790,8 @@ export const ShopDashboardPage: React.FC = () => {
                   type="text"
                   required
                   placeholder="Ví dụ: Sofa Da Bò Ý Milano"
-                  value={newProdName}
-                  onChange={(e) => setNewProdName(e.target.value)}
+                  value={prodName}
+                  onChange={(e) => setProdName(e.target.value)}
                   className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
                 />
               </div>
@@ -635,8 +802,8 @@ export const ShopDashboardPage: React.FC = () => {
                     Danh mục
                   </label>
                   <select
-                    value={newProdCategory}
-                    onChange={(e) => setNewProdCategory(e.target.value)}
+                    value={prodCategory}
+                    onChange={(e) => setProdCategory(e.target.value)}
                     className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
                   >
                     <option value="sofa-phong-khach">Sofa Phòng Khách</option>
@@ -656,24 +823,38 @@ export const ShopDashboardPage: React.FC = () => {
                   <input
                     type="number"
                     placeholder="25000000"
-                    value={newProdPrice}
-                    onChange={(e) => setNewProdPrice(e.target.value)}
+                    value={prodPrice}
+                    onChange={(e) => setProdPrice(e.target.value)}
                     className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
-                  Chất liệu chính
-                </label>
-                <input
-                  type="text"
-                  placeholder="Gỗ sồi Nga tự nhiên, đệm D40..."
-                  value={newProdMaterial}
-                  onChange={(e) => setNewProdMaterial(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                    Chất liệu chính
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Gỗ sồi Nga tự nhiên, đệm D40..."
+                    value={prodMaterial}
+                    onChange={(e) => setProdMaterial(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                    Kích thước
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="2800 x 1700 x 850 mm"
+                    value={prodDimensions}
+                    onChange={(e) => setProdDimensions(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
+                  />
+                </div>
               </div>
 
               <div>
@@ -683,8 +864,8 @@ export const ShopDashboardPage: React.FC = () => {
                 <input
                   type="url"
                   placeholder="https://images.unsplash.com/..."
-                  value={newProdImage}
-                  onChange={(e) => setNewProdImage(e.target.value)}
+                  value={prodImage}
+                  onChange={(e) => setProdImage(e.target.value)}
                   className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
                 />
               </div>
@@ -694,10 +875,10 @@ export const ShopDashboardPage: React.FC = () => {
                   Mô tả sản phẩm
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Mô tả ưu điểm và thông số của sản phẩm..."
-                  value={newProdDesc}
-                  onChange={(e) => setNewProdDesc(e.target.value)}
+                  value={prodDesc}
+                  onChange={(e) => setProdDesc(e.target.value)}
                   className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
                 />
               </div>
@@ -705,17 +886,160 @@ export const ShopDashboardPage: React.FC = () => {
               <div className="pt-2 flex justify-end gap-3 border-t border-[#E7DCce]">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowProductModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  disabled={addingProduct}
-                  className="px-5 py-2 bg-[#654329] text-white rounded-lg text-sm font-semibold hover:bg-[#533722] disabled:opacity-60"
+                  disabled={savingProduct}
+                  className="px-5 py-2 bg-[#654329] text-white rounded-lg text-xs font-semibold hover:bg-[#533722] disabled:opacity-60 flex items-center gap-1.5"
                 >
-                  {addingProduct ? 'Đang thêm...' : 'Lưu sản phẩm'}
+                  {savingProduct ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  {savingProduct ? 'Đang lưu...' : 'Lưu sản phẩm vào CSDL'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Phản hồi báo giá */}
+      {selectedQuote && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E7DCce]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E7DCce]">
+              <h3 className="font-bold text-base text-[#29231F]">
+                Phản hồi khách #{selectedQuote.id.slice(0, 8)}
+              </h3>
+              <button onClick={() => setSelectedQuote(null)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReplyQuote} className="mt-4 space-y-3 text-sm">
+              <div className="p-3 bg-[#FAF8F5] rounded-xl text-xs space-y-1">
+                <p>Khách hàng: <strong>{selectedQuote.customer_name}</strong></p>
+                <p>Số điện thoại: <a href={`tel:${selectedQuote.phone}`} className="text-blue-600 font-semibold">{selectedQuote.phone}</a></p>
+                <p>Sản phẩm: <strong>{selectedQuote.product_name}</strong></p>
+                {selectedQuote.note && <p className="italic text-gray-500">"{selectedQuote.note}"</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                  Trạng thái sau khi tư vấn
+                </label>
+                <select
+                  value={replyStatus}
+                  onChange={(e) => setReplyStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-xs bg-[#FAF8F5] font-semibold"
+                >
+                  <option value="contacted">Đã liên hệ tư vấn</option>
+                  <option value="completed">Đã chốt hợp đồng</option>
+                  <option value="cancelled">Khách hủy yêu cầu</option>
+                  <option value="pending">Chờ gọi lại sau</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                  Ghi chú kết quả tư vấn
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Ghi lại báo giá sơ bộ, kích thước khách yêu cầu, hoặc thời gian hẹn đo đạc..."
+                  value={replyNote}
+                  onChange={(e) => setReplyNote(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-xs bg-[#FAF8F5]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-[#E7DCce]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedQuote(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-xs text-gray-700"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingReply}
+                  className="px-5 py-2 bg-[#654329] text-white rounded-lg text-xs font-semibold hover:bg-[#533722]"
+                >
+                  {savingReply ? 'Đang lưu...' : 'Lưu kết quả tư vấn'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cập nhật hồ sơ xưởng */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E7DCce]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E7DCce]">
+              <h3 className="font-bold text-base text-[#29231F]">Cài đặt thương hiệu Xưởng</h3>
+              <button onClick={() => setShowProfileModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveShopProfile} className="mt-4 space-y-3 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                  Tên thương hiệu xưởng *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={shopNameInput}
+                  onChange={(e) => setShopNameInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-xs bg-[#FAF8F5]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                  Hotline tư vấn xưởng
+                </label>
+                <input
+                  type="tel"
+                  value={shopPhoneInput}
+                  onChange={(e) => setShopPhoneInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-xs bg-[#FAF8F5]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
+                  Địa chỉ xưởng sản xuất
+                </label>
+                <input
+                  type="text"
+                  value={shopAddressInput}
+                  onChange={(e) => setShopAddressInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-xs bg-[#FAF8F5]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-[#E7DCce]">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-xs text-gray-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="px-5 py-2 bg-[#654329] text-white rounded-lg text-xs font-semibold hover:bg-[#533722]"
+                >
+                  {savingProfile ? 'Đang lưu...' : 'Lưu hồ sơ vào CSDL'}
                 </button>
               </div>
             </form>

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import {
   CONTACT_INFO,
@@ -20,6 +21,7 @@ import {
   getFacebookHref,
   getMapsHref,
 } from '../config/contact';
+import { submitQuoteRequest } from '../lib/supabase';
 
 export const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -30,11 +32,27 @@ export const ContactPage: React.FC = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.phone.trim()) return;
-    setSubmitted(true);
+
+    setIsSubmitting(true);
+    try {
+      await submitQuoteRequest({
+        customer_name: formData.name.trim() || 'Khách liên hệ tư vấn',
+        phone: formData.phone.trim(),
+        email: formData.email.trim() || undefined,
+        product_name: `Tư vấn liên hệ: ${formData.interest}`,
+        note: formData.message.trim() || 'Khách gửi qua biểu mẫu liên hệ',
+      });
+    } catch (err) {
+      console.error('Lỗi gửi liên hệ:', err);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -288,10 +306,20 @@ export const ContactPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full luxury-btn bg-[#654329] hover:bg-[#533722] text-white py-3.5 rounded-md font-semibold text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md"
+                  disabled={isSubmitting}
+                  className="w-full luxury-btn bg-[#654329] hover:bg-[#533722] text-white py-3.5 rounded-md font-semibold text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-60"
                 >
-                  <Send className="w-4 h-4 text-[#DFC7A7]" />
-                  <span>GỬI YÊU CẦU TƯ VẤN NGAY</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-[#DFC7A7] animate-spin" />
+                      <span>ĐANG GỬI DỮ LIỆU...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 text-[#DFC7A7]" />
+                      <span>GỬI YÊU CẦU TƯ VẤN NGAY</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}

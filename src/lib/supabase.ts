@@ -319,6 +319,131 @@ export async function toggleProductStockInDB(id: string, currentInStock: boolean
 }
 
 /**
+ * Cập nhật thông tin chi tiết sản phẩm
+ */
+export async function updateProductInDB(id: string, updates: Partial<Product>) {
+  try {
+    const rowUpdates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.name !== undefined) rowUpdates.name = updates.name;
+    if (updates.price !== undefined) rowUpdates.price = updates.price;
+    if (updates.displayPrice !== undefined) rowUpdates.display_price = updates.displayPrice;
+    if (updates.categoryId !== undefined) rowUpdates.category_id = updates.categoryId;
+    if (updates.categoryName !== undefined) rowUpdates.category_name = updates.categoryName;
+    if (updates.material !== undefined) rowUpdates.material = updates.material;
+    if (updates.dimensions !== undefined) rowUpdates.dimensions = updates.dimensions;
+    if (updates.description !== undefined) rowUpdates.description = updates.description;
+    if (updates.images !== undefined) rowUpdates.images = updates.images;
+    if (updates.inStock !== undefined) rowUpdates.in_stock = updates.inStock;
+
+    const { data, error } = await supabase
+      .from('products')
+      .update(rowUpdates)
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    return { success: true, data: data?.[0] };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Admin tạo tài khoản người dùng mới trực tiếp vào hệ thống
+ */
+export async function adminCreateUser(userData: {
+  name: string;
+  email: string;
+  phone: string;
+  password?: string;
+  role: UserRole;
+  status: UserStatus;
+  shopName?: string;
+}) {
+  try {
+    const pwd = userData.password || 'CaoLuat@2024';
+    let targetId: any = crypto.randomUUID();
+
+    try {
+      const { data: authData } = await supabase.auth.signUp({
+        email: userData.email.trim(),
+        password: pwd,
+        options: {
+          data: {
+            name: userData.name.trim(),
+            phone: userData.phone.trim(),
+            role: userData.role,
+          },
+        },
+      });
+      if (authData?.user?.id) targetId = authData.user.id;
+    } catch {}
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert([
+        {
+          id: targetId as any,
+          email: userData.email.trim(),
+          name: userData.name.trim(),
+          phone: userData.phone.trim(),
+          role: userData.role,
+          status: userData.status,
+          shop_name: userData.shopName || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
+      .select();
+
+    if (error) throw error;
+    return { success: true, data: data?.[0] };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Xuất dữ liệu danh sách báo giá ra file CSV thực tế
+ */
+export function exportQuotesToCSV(quotes: DBQuoteRequest[]) {
+  const headers = [
+    'Mã Yêu Cầu',
+    'Tên Khách Hàng',
+    'Số Điện Thoại',
+    'Email',
+    'Sản Phẩm Quan Tâm',
+    'Trạng Thái',
+    'Ghi Chú Khách',
+    'Ghi Chú Admin',
+    'Ngày Tạo',
+  ];
+  const rows = quotes.map((q) => [
+    q.id,
+    `"${(q.customer_name || '').replace(/"/g, '""')}"`,
+    `"${q.phone}"`,
+    `"${q.email || ''}"`,
+    `"${(q.product_name || '').replace(/"/g, '""')}"`,
+    q.status,
+    `"${(q.note || '').replace(/"/g, '""')}"`,
+    `"${(q.admin_note || '').replace(/"/g, '""')}"`,
+    new Date(q.created_at).toLocaleString('vi-VN'),
+  ]);
+
+  const csvContent =
+    '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Bao_Cao_Bao_Gia_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
  * Xóa sản phẩm khỏi database
  */
 export async function deleteProductInDB(id: string) {
