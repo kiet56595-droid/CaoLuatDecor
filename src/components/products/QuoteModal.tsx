@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Phone, MessageSquare, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { X, Phone, MessageSquare, Mail, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { Product } from '../../types';
 import {
   CONTACT_INFO,
@@ -7,6 +7,7 @@ import {
   getZaloHref,
   getMailtoHref,
 } from '../../config/contact';
+import { submitQuoteRequest } from '../../lib/supabase';
 
 interface QuoteModalProps {
   isOpen: boolean;
@@ -23,13 +24,29 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim()) return;
-    setSubmitted(true);
+
+    setLoading(true);
+    try {
+      await submitQuoteRequest({
+        customer_name: fullName.trim() || 'Khách hàng liên hệ',
+        phone: phone.trim(),
+        product_name: productName,
+        product_code: productCode,
+        note: notes.trim(),
+      });
+    } catch (err) {
+      console.error('Lỗi khi gửi báo giá:', err);
+    } finally {
+      setLoading(false);
+      setSubmitted(true);
+    }
   };
 
   const resetAndClose = () => {
@@ -187,9 +204,11 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full luxury-btn bg-[#654329] hover:bg-[#533722] text-white py-3 rounded-md font-semibold text-sm transition-all shadow-md"
+                  disabled={loading}
+                  className="w-full luxury-btn bg-[#654329] hover:bg-[#533722] disabled:opacity-60 text-white py-3 rounded-md font-semibold text-sm transition-all shadow-md flex items-center justify-center gap-2"
                 >
-                  GỬI YÊU CẦU BÁO GIÁ NGAY
+                  {loading && <Loader2 className="w-4 h-4 animate-spin text-[#DFC7A7]" />}
+                  <span>{loading ? 'ĐANG GỬI THÔNG TIN...' : 'GỬI YÊU CẦU BÁO GIÁ NGAY'}</span>
                 </button>
               </form>
             </div>
