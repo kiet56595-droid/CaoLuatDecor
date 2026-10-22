@@ -1,6 +1,6 @@
 -- ========================================================
 -- CAO LUẬT DECOR - FULL DATABASE SCHEMA (TẤT CẢ CÁC ACTORS)
--- Actors hỗ trợ:
+-- Hỗ trợ 4 Actors:
 -- 1. GUEST (Khách vãng lai)
 -- 2. CUSTOMER (Khách hàng thành viên)
 -- 3. SHOP_OWNER (Chủ xưởng / Cửa hàng đối tác)
@@ -56,6 +56,17 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- Đồng bộ tài khoản auth.users đã tồn tại vào profiles (nếu có)
+insert into public.profiles (id, email, name, role, status)
+select 
+  id, 
+  email, 
+  coalesce(raw_user_meta_data->>'name', split_part(coalesce(email, 'user'), '@', 1)),
+  coalesce(raw_user_meta_data->>'role', 'CUSTOMER'),
+  'ACTIVE'
+from auth.users
+on conflict (id) do nothing;
+
 -- ========================================================
 -- 2. BẢNG DANH MỤC SẢN PHẨM (CATEGORIES)
 -- Actors: ADMIN (quản trị), GUEST & CUSTOMER (xem)
@@ -79,7 +90,7 @@ create table if not exists public.categories (
 -- - GUEST / CUSTOMER (tìm kiếm, xem sản phẩm)
 -- ========================================================
 create table if not exists public.products (
-  id uuid default gen_random_uuid() primary key,
+  id text primary key default gen_random_uuid()::text,
   slug text not null unique,
   name text not null,
   code text,
@@ -111,7 +122,7 @@ create table if not exists public.products (
 -- Actors: ADMIN, SHOP_OWNER (đăng dự án đã thi công), GUEST (xem)
 -- ========================================================
 create table if not exists public.projects (
-  id uuid default gen_random_uuid() primary key,
+  id text primary key default gen_random_uuid()::text,
   slug text not null unique,
   title text not null,
   category text not null,
@@ -141,16 +152,23 @@ create table if not exists public.quote_requests (
   customer_name text not null,
   phone text not null,
   email text,
-  product_id uuid references public.products(id) on delete set null,
+  product_id text references public.products(id) on delete set null,
   product_name text default 'Tư vấn tổng thể nội thất',
   product_code text,
   shop_id uuid references public.profiles(id) on delete set null,
   note text,
-  status text default 'pending' check (status in ('pending', 'contacted', 'completed', 'cancelled')),
+  status text default 'pending',
   admin_note text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Đảm bảo bổ sung các cột nếu bảng quote_requests đã được tạo ở bước trước:
+alter table public.quote_requests add column if not exists user_id uuid references public.profiles(id) on delete set null;
+alter table public.quote_requests add column if not exists product_id text references public.products(id) on delete set null;
+alter table public.quote_requests add column if not exists shop_id uuid references public.profiles(id) on delete set null;
+alter table public.quote_requests add column if not exists admin_note text;
+alter table public.quote_requests add column if not exists updated_at timestamp with time zone default timezone('utc'::text, now());
 
 -- ========================================================
 -- 6. BẢNG ĐÁNH GIÁ SẢN PHẨM (REVIEWS)
@@ -163,7 +181,7 @@ create table if not exists public.quote_requests (
 create table if not exists public.reviews (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete set null,
-  product_id uuid references public.products(id) on delete cascade,
+  product_id text references public.products(id) on delete cascade,
   client_name text not null,
   rating int not null check (rating >= 1 and rating <= 5),
   comment text not null,
@@ -253,11 +271,20 @@ create policy "Khách vãng lai và thành viên gửi báo giá" on public.quot
 
 drop policy if exists "Customer xem báo giá của mình" on public.quote_requests;
 create policy "Customer xem báo giá của mình" on public.quote_requests
-  for select using (auth.uid() = user_id or auth.uid() = shop_id or public.is_admin() or auth.role() = 'anon');
+  for select using (
+    auth.uid() = user_id 
+    or auth.uid() = shop_id 
+    or public.is_admin() 
+    or auth.role() = 'anon'
+  );
 
 drop policy if exists "Shop và Admin cập nhật trạng thái báo giá" on public.quote_requests;
 create policy "Shop và Admin cập nhật trạng thái báo giá" on public.quote_requests
-  for update using (auth.uid() = shop_id or public.is_admin() or auth.role() = 'anon');
+  for update using (
+    auth.uid() = shop_id 
+    or public.is_admin() 
+    or auth.role() = 'anon'
+  );
 
 -- ── Policies cho Bảng reviews ────────────────────────────
 drop policy if exists "Ai cũng được xem đánh giá đã duyệt" on public.reviews;
