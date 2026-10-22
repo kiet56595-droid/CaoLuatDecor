@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Package, ShieldCheck, Bell, Eye, Trash2, CheckCircle,
   XCircle, Clock, BarChart3, Store,
@@ -504,14 +504,14 @@ export const AdminDashboardPage: React.FC = () => {
               <p className="text-[10px] text-white/40">Quản trị viên CSDL</p>
             </div>
           )}
-          <a
-            href="/"
+          <Link
+            to="/"
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all"
             title="Quay lại giao diện website"
           >
             <Eye className="w-4 h-4 shrink-0" />
             {sidebarOpen && <span>Xem website</span>}
-          </a>
+          </Link>
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/60 hover:text-red-400 hover:bg-red-900/20 transition-all"

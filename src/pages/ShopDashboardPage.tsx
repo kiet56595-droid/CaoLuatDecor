@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, MessageSquare, Star,
   Plus, Eye, Edit, ToggleLeft, ToggleRight,
@@ -367,12 +367,12 @@ export const ShopDashboardPage: React.FC = () => {
         </nav>
 
         <div className="border-t border-[#E7DCce] p-3 space-y-1">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#473E37] hover:bg-[#FAF8F5] transition-colors"
           >
             <Eye className="w-4 h-4 shrink-0" /> Xem website
-          </a>
+          </Link>
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#877B70] hover:text-red-500 hover:bg-red-50 transition-all"

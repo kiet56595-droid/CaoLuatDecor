@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import {
   User, Phone, Mail, MapPin, Calendar, Edit3, Save, X, CheckCircle2, Shield,
   MessageSquare, Clock, CheckCircle, XCircle
@@ -308,12 +308,12 @@ export const AccountPage: React.FC = () => {
                   <p className="text-[#B5A090] text-xs mt-1">
                     Khi bạn gửi form báo giá cho sản phẩm, tiến độ xử lý sẽ xuất hiện tại đây.
                   </p>
-                  <a
-                    href="/san-pham"
+                  <Link
+                    to="/san-pham"
                     className="mt-4 inline-block bg-[#654329] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#533722] transition-colors"
                   >
                     Khám phá sản phẩm
-                  </a>
+                  </Link>
                 </div>
               ) : (
                 <div className="divide-y divide-[#F7F3ED]">
