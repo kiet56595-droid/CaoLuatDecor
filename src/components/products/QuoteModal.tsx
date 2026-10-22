@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Phone, MessageSquare, Mail, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { Product } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import {
   CONTACT_INFO,
   getTelHref,
@@ -20,11 +21,19 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   onClose,
   product,
 }) => {
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const { user } = useAuth();
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      setFullName((prev) => prev || user.name);
+      setPhone((prev) => prev || user.phone);
+    }
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -37,8 +46,10 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
       await submitQuoteRequest({
         customer_name: fullName.trim() || 'Khách hàng liên hệ',
         phone: phone.trim(),
+        product_id: product?.id,
         product_name: productName,
         product_code: productCode,
+        user_id: user?.id,
         note: notes.trim(),
       });
     } catch (err) {

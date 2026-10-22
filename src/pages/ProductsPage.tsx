@@ -5,6 +5,7 @@ import { PRODUCTS } from '../data/products';
 import { CATEGORIES } from '../data/categories';
 import { Product } from '../types';
 import { ChevronRight, Home, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { fetchProductsFromDB } from '../lib/supabase';
 
 export type SortOption = 'default' | 'price-asc' | 'price-desc' | 'newest';
 
@@ -45,6 +46,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
   const [searchQuery, setSearchQuery] = useState<string>(queryParam);
   const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [productsList, setProductsList] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    fetchProductsFromDB().then((data) => {
+      if (data && data.length > 0) setProductsList(data);
+    });
+  }, []);
 
   // Keep state in sync with URL search params
   useEffect(() => {
@@ -64,7 +72,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((product) => {
+    return productsList.filter((product) => {
       // Category match: hỗ trợ cả nhóm phòng lẫn danh mục con
       let matchCategory = selectedCategory === 'all';
       if (!matchCategory) {

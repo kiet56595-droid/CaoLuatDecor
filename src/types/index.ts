@@ -106,3 +106,48 @@ export interface QuoteRequestItem {
   status: 'PENDING' | 'RESPONDED' | 'CLOSED';
   createdAt: string;
 }
+
+export interface DBProfile {
+  id: string;
+  email?: string;
+  name: string;
+  phone?: string;
+  role: UserRole;
+  status: UserStatus;
+  avatar?: string;
+  address?: string;
+  city?: string;
+  shop_name?: string;
+  shop_description?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface DBQuoteRequest {
+  id: string;
+  user_id?: string | null;
+  customer_name: string;
+  phone: string;
+  email?: string | null;
+  product_id?: string | null;
+  product_name?: string | null;
+  product_code?: string | null;
+  shop_id?: string | null;
+  note?: string | null;
+  status: string; // 'pending' | 'contacted' | 'completed' | 'cancelled'
+  admin_note?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface DBReview {
+  id: string;
+  user_id?: string | null;
+  product_id?: string | null;
+  client_name: string;
+  rating: number;
+  comment: string;
+  avatar?: string | null;
+  is_approved?: boolean;
+  created_at: string;
+}

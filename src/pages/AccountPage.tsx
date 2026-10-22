@@ -1,22 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   User, Phone, Mail, MapPin, Calendar, Edit3, Save, X, CheckCircle2, Shield,
+  MessageSquare, Clock, CheckCircle, XCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PageHeader } from '../components/common/PageHeader';
+import { DBQuoteRequest } from '../types';
+import { fetchQuoteRequests } from '../lib/supabase';
 
 export const AccountPage: React.FC = () => {
   const { user, isAuthenticated, isLoading, updateProfile, logout } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [userQuotes, setUserQuotes] = useState<DBQuoteRequest[]>([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [form, setForm] = useState({
     name: user?.name ?? '',
     phone: user?.phone ?? '',
     address: user?.address ?? '',
     city: user?.city ?? '',
   });
+
+  useEffect(() => {
+    if (user) {
+      setLoadingQuotes(true);
+      fetchQuoteRequests().then((data) => {
+        const mine = data.filter(
+          (q) =>
+            (user.id && q.user_id === user.id) ||
+            (user.phone && q.phone === user.phone) ||
+            (user.email && q.email === user.email)
+        );
+        setUserQuotes(mine);
+        setLoadingQuotes(false);
+      });
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -259,24 +280,66 @@ export const AccountPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Hoạt động gần đây (placeholder) */}
+            {/* Lịch sử yêu cầu báo giá thực tế từ Database */}
             <div className="bg-white border border-[#E7DCce] rounded-2xl shadow-sm p-6">
-              <h3 className="font-serif text-lg font-semibold text-[#29231F] mb-4">Hoạt động gần đây</h3>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-14 h-14 bg-[#F7F3ED] rounded-full flex items-center justify-center mb-3">
-                  <Calendar className="w-6 h-6 text-[#B5A090]" />
-                </div>
-                <p className="text-[#877B70] text-sm">Chưa có hoạt động nào.</p>
-                <p className="text-[#B5A090] text-xs mt-1">
-                  Lịch sử báo giá và đơn hàng sẽ hiển thị tại đây.
-                </p>
-                <a
-                  href="/san-pham"
-                  className="mt-4 inline-block bg-[#654329] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#533722] transition-colors"
-                >
-                  Khám phá sản phẩm
-                </a>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-serif text-lg font-semibold text-[#29231F]">
+                  Lịch sử yêu cầu báo giá của bạn
+                </h3>
+                <span className="text-xs text-[#877B70] bg-[#FAF8F5] px-2.5 py-1 rounded-full border border-[#E7DCce]">
+                  {userQuotes.length} yêu cầu
+                </span>
               </div>
+
+              {loadingQuotes ? (
+                <div className="py-8 text-center text-xs text-gray-400">Đang tải dữ liệu từ CSDL...</div>
+              ) : userQuotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="w-14 h-14 bg-[#F7F3ED] rounded-full flex items-center justify-center mb-3">
+                    <Calendar className="w-6 h-6 text-[#B5A090]" />
+                  </div>
+                  <p className="text-[#877B70] text-sm">Chưa có yêu cầu báo giá nào.</p>
+                  <p className="text-[#B5A090] text-xs mt-1">
+                    Khi bạn gửi form báo giá cho sản phẩm, tiến độ xử lý sẽ xuất hiện tại đây.
+                  </p>
+                  <a
+                    href="/san-pham"
+                    className="mt-4 inline-block bg-[#654329] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#533722] transition-colors"
+                  >
+                    Khám phá sản phẩm
+                  </a>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#F7F3ED]">
+                  {userQuotes.map((q) => {
+                    const statusBadge =
+                      q.status === 'completed'
+                        ? { label: 'Đã hoàn thành', color: 'bg-green-50 text-green-700' }
+                        : q.status === 'contacted'
+                        ? { label: 'Đã liên hệ tư vấn', color: 'bg-blue-50 text-blue-700' }
+                        : q.status === 'cancelled'
+                        ? { label: 'Đã hủy', color: 'bg-gray-100 text-gray-500' }
+                        : { label: 'Đang chờ xử lý', color: 'bg-amber-50 text-amber-700' };
+
+                    return (
+                      <div key={q.id} className="py-3.5 flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-[#29231F] truncate">
+                            {q.product_name}
+                          </p>
+                          <p className="text-xs text-[#877B70] mt-0.5">
+                            Ngày gửi: {new Date(q.created_at).toLocaleDateString('vi-VN')}
+                            {q.note && ` — "${q.note}"`}
+                          </p>
+                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${statusBadge.color}`}>
+                          {statusBadge.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
