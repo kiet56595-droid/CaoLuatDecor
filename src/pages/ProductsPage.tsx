@@ -18,9 +18,7 @@ const ROOM_MAP: Record<string, string[]> = {
   'phong-an': ['ban-an-ghe-an'],
   'phong-ngu': ['giuong-ngu', 'tu-quan-ao'],
   'tu-bep': ['tu-bep'],
-  'noi-that-tre-em': ['noi-that-tre-em'],
   'noi-that-van-phong': ['noi-that-van-phong'],
-  'do-decor-trang-tri': ['do-decor-trang-tri'],
 };
 
 // Tên hiển thị chuẩn cho từng danh mục / nhóm phòng
@@ -36,9 +34,7 @@ const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
   'giuong-ngu': 'Giường Ngủ',
   'tu-quan-ao': 'Tủ Quần Áo',
   'tu-bep': 'Hệ Tủ Bếp',
-  'noi-that-tre-em': 'Nội Thất Phòng Em Bé',
   'noi-that-van-phong': 'Nội Thất Văn Phòng',
-  'do-decor-trang-tri': 'Đồ Decor Trang Trí',
 };
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {

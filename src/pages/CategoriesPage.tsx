@@ -10,7 +10,7 @@ export const CategoriesPage: React.FC = () => {
     <div className="min-h-screen bg-[#FAF8F5] pb-20">
       <PageHeader
         title="Danh Mục Sản Phẩm Nội Thất"
-        subtitle="Hệ thống 10 danh mục nội thất may đo cao cấp phục vụ đầy đủ các không gian sống: Phòng khách, phòng bếp, phòng ngủ và không gian làm việc."
+        subtitle="Hệ thống 8 danh mục nội thất may đo cao cấp phục vụ đầy đủ các không gian sống: Phòng khách, phòng bếp, phòng ngủ và không gian làm việc."
         breadcrumbs={[{ label: 'Danh mục' }]}
         backgroundImage="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=80"
       />

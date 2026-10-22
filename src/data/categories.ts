@@ -65,20 +65,4 @@ export const CATEGORIES: Category[] = [
     image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
     itemCount: 4,
   },
-  {
-    id: 'noi-that-tre-em',
-    name: 'Nội Thất Trẻ Em',
-    slug: 'noi-that-tre-em',
-    description: 'Bộ phòng ngủ cho bé an toàn, sắc màu tinh tế, giường tầng kết hợp bàn học thông minh.',
-    image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
-    itemCount: 4,
-  },
-  {
-    id: 'do-decor-trang-tri',
-    name: 'Đồ Decor Trang Trí',
-    slug: 'do-decor-trang-tri',
-    description: 'Đèn cây nghệ thuật, bình gốm thủ công, tranh canvas và thảm trải sàn tạo điểm nhấn nghệ thuật.',
-    image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80',
-    itemCount: 6,
-  },
 ];

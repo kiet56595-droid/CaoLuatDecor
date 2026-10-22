@@ -50,19 +50,9 @@ export const CATEGORY_NAV_GROUPS: CategoryNavGroup[] = [
     ],
   },
   {
-    label: 'PHÒNG EM BÉ',
-    path: '/san-pham?category=noi-that-tre-em',
-    categoryId: 'noi-that-tre-em',
-  },
-  {
     label: 'VĂN PHÒNG',
     path: '/san-pham?category=noi-that-van-phong',
     categoryId: 'noi-that-van-phong',
-  },
-  {
-    label: 'ĐỒ TRANG TRÍ',
-    path: '/san-pham?category=do-decor-trang-tri',
-    categoryId: 'do-decor-trang-tri',
   },
   {
     label: 'TẤT CẢ SẢN PHẨM',
