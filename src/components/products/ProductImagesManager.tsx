@@ -29,37 +29,44 @@ export const ProductImagesManager: React.FC<ProductImagesManagerProps> = ({
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (event) => {
+        const rawResult = event.target?.result as string;
         const img = new Image();
         img.onload = () => {
-          // Giới hạn độ phân giải tối đa 1200px để tối ưu dung lượng
-          const maxDim = 1200;
-          let width = img.width;
-          let height = img.height;
+          try {
+            // Giới hạn độ phân giải tối đa 960px để tối ưu dung lượng và tốc độ
+            const maxDim = 960;
+            let width = img.width;
+            let height = img.height;
 
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
             }
-          }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            // Nén JPEG chất lượng 82%
-            resolve(canvas.toDataURL('image/jpeg', 0.82));
-          } else {
-            resolve(event.target?.result as string);
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              // Nén JPEG chất lượng 78% (rất nét, dung lượng chỉ ~40-70KB)
+              resolve(canvas.toDataURL('image/jpeg', 0.78));
+            } else {
+              resolve(rawResult);
+            }
+          } catch {
+            resolve(rawResult);
           }
         };
-        img.src = event.target?.result as string;
+        img.onerror = () => resolve(rawResult);
+        img.src = rawResult;
       };
+      reader.onerror = () => resolve('');
       reader.readAsDataURL(file);
     });
   };
@@ -215,18 +222,19 @@ export const ProductImagesManager: React.FC<ProductImagesManagerProps> = ({
               accept="image/*"
               multiple
               className="hidden"
-              id="file-product-upload"
             />
-            <label
-              htmlFor="file-product-upload"
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isProcessing}
               className={`w-full border border-dashed border-[#654329] hover:bg-[#FAF8F5] text-[#654329] rounded-lg py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors ${
-                isProcessing ? 'opacity-50 pointer-events-none' : ''
+                isProcessing ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Đang xử lý hình ảnh...</span>
+                  <span>Đang xử lý và nén hình ảnh...</span>
                 </>
               ) : (
                 <>
@@ -234,7 +242,7 @@ export const ProductImagesManager: React.FC<ProductImagesManagerProps> = ({
                   <span>Chọn 1 hoặc nhiều ảnh từ máy tính (JPG, PNG, WebP)</span>
                 </>
               )}
-            </label>
+            </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -243,6 +251,12 @@ export const ProductImagesManager: React.FC<ProductImagesManagerProps> = ({
               placeholder="Dán đường dẫn ảnh (ví dụ: https://images.unsplash.com/...)"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddUrl(e);
+                }
+              }}
               className="flex-1 px-3 py-1.5 border border-[#D5C3AF] rounded-lg text-xs bg-[#FAF8F5] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#654329]"
             />
             <button
@@ -259,3 +273,4 @@ export const ProductImagesManager: React.FC<ProductImagesManagerProps> = ({
     </div>
   );
 };
+

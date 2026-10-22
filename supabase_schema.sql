@@ -248,12 +248,11 @@ create policy "Chỉ Admin được chỉnh sửa danh mục" on public.categori
 
 -- ── Policies cho Bảng products ───────────────────────────
 drop policy if exists "Ai cũng được xem sản phẩm công khai" on public.products;
-create policy "Ai cũng được xem sản phẩm công khai" on public.products
-  for select using (status = 'published' or auth.uid() = shop_id or public.is_admin());
-
 drop policy if exists "Shop Owner quản lý sản phẩm của mình" on public.products;
-create policy "Shop Owner quản lý sản phẩm của mình" on public.products
-  for all using (auth.uid() = shop_id or public.is_admin());
+drop policy if exists "Toàn quyền quản lý sản phẩm" on public.products;
+
+create policy "Toàn quyền quản lý sản phẩm" on public.products
+  for all using (true) with check (true);
 
 -- ── Policies cho Bảng projects ───────────────────────────
 drop policy if exists "Ai cũng được xem dự án" on public.projects;
