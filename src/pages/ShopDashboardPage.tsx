@@ -20,6 +20,7 @@ import {
   fetchReviewsFromDB,
   seedProductsToSupabase,
 } from '../lib/supabase';
+import { ProductImagesManager } from '../components/products/ProductImagesManager';
 
 type ShopTab = 'overview' | 'products' | 'quotes' | 'reviews';
 
@@ -61,7 +62,7 @@ export const ShopDashboardPage: React.FC = () => {
   const [prodPrice, setProdPrice] = useState('');
   const [prodMaterial, setProdMaterial] = useState('');
   const [prodDimensions, setProdDimensions] = useState('');
-  const [prodImage, setProdImage] = useState('');
+  const [prodImages, setProdImages] = useState<string[]>([]);
   const [prodDesc, setProdDesc] = useState('');
   const [savingProduct, setSavingProduct] = useState(false);
 
@@ -136,7 +137,7 @@ export const ShopDashboardPage: React.FC = () => {
     setProdPrice('');
     setProdMaterial('Gỗ tự nhiên cao cấp');
     setProdDimensions('Kích thước theo yêu cầu');
-    setProdImage('');
+    setProdImages([]);
     setProdDesc('');
     setShowProductModal(true);
   };
@@ -149,7 +150,7 @@ export const ShopDashboardPage: React.FC = () => {
     setProdPrice(p.price ? p.price.toString() : '');
     setProdMaterial(p.material || '');
     setProdDimensions(p.dimensions || '');
-    setProdImage(p.images?.[0] || '');
+    setProdImages(p.images && p.images.length > 0 ? p.images : []);
     setProdDesc(p.description || '');
     setShowProductModal(true);
   };
@@ -162,8 +163,8 @@ export const ShopDashboardPage: React.FC = () => {
     setSavingProduct(true);
     const parsedPrice = prodPrice ? Number(prodPrice.replace(/\D/g, '')) : null;
     const defaultImg =
-      prodImage.trim() ||
       'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80';
+    const finalImages = prodImages.length > 0 ? prodImages : [defaultImg];
 
     if (editingProductId) {
       const res = await updateProductInDB(editingProductId, {
@@ -173,7 +174,7 @@ export const ShopDashboardPage: React.FC = () => {
         material: prodMaterial.trim(),
         dimensions: prodDimensions.trim(),
         description: prodDesc.trim(),
-        images: [defaultImg],
+        images: finalImages,
       });
       setSavingProduct(false);
       if (res.success) {
@@ -190,7 +191,7 @@ export const ShopDashboardPage: React.FC = () => {
         price: parsedPrice,
         material: prodMaterial.trim(),
         dimensions: prodDimensions.trim(),
-        images: [defaultImg],
+        images: finalImages,
         description: prodDesc.trim(),
         shopId: user?.id,
         inStock: true,
@@ -857,18 +858,7 @@ export const ShopDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">
-                  Link ảnh sản phẩm (URL)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/..."
-                  value={prodImage}
-                  onChange={(e) => setProdImage(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#D5C3AF] rounded-lg text-sm bg-[#FAF8F5]"
-                />
-              </div>
+              <ProductImagesManager images={prodImages} onChange={setProdImages} />
 
               <div>
                 <label className="block text-xs font-semibold text-[#877B70] uppercase mb-1">

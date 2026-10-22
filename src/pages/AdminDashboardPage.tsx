@@ -25,6 +25,7 @@ import {
   adminCreateUser,
   exportQuotesToCSV,
 } from '../lib/supabase';
+import { ProductImagesManager } from '../components/products/ProductImagesManager';
 
 type AdminTab = 'overview' | 'users' | 'products' | 'quotes' | 'settings';
 
@@ -105,7 +106,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [prodFormCode, setProdFormCode] = useState('');
   const [prodFormMaterial, setProdFormMaterial] = useState('');
   const [prodFormDimensions, setProdFormDimensions] = useState('');
-  const [prodFormImage, setProdFormImage] = useState('');
+  const [prodFormImages, setProdFormImages] = useState<string[]>([]);
   const [prodFormDesc, setProdFormDesc] = useState('');
   const [savingProduct, setSavingProduct] = useState(false);
 
@@ -294,7 +295,7 @@ export const AdminDashboardPage: React.FC = () => {
     setProdFormCode(p.code || '');
     setProdFormMaterial(p.material || '');
     setProdFormDimensions(p.dimensions || '');
-    setProdFormImage(p.images?.[0] || '');
+    setProdFormImages(p.images && p.images.length > 0 ? p.images : []);
     setProdFormDesc(p.description || '');
     setShowProductModal(true);
   };
@@ -308,7 +309,7 @@ export const AdminDashboardPage: React.FC = () => {
     setProdFormCode(`CL-${Math.floor(1000 + Math.random() * 9000)}`);
     setProdFormMaterial('Gỗ tự nhiên cao cấp');
     setProdFormDimensions('Theo kích thước thực tế');
-    setProdFormImage('');
+    setProdFormImages([]);
     setProdFormDesc('');
     setShowProductModal(true);
   };
@@ -321,19 +322,19 @@ export const AdminDashboardPage: React.FC = () => {
     setSavingProduct(true);
     const parsedPrice = prodFormPrice ? Number(prodFormPrice.replace(/\D/g, '')) : null;
     const defaultImg =
-      prodFormImage.trim() ||
       'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80';
+    const finalImages = prodFormImages.length > 0 ? prodFormImages : [defaultImg];
 
     if (editingProductId) {
       // Cập nhật sản phẩm
       const res = await updateProductInDB(editingProductId, {
-        name: prodFormFormTrim(prodFormName),
+        name: prodFormName.trim(),
         categoryId: prodFormCat,
         price: parsedPrice,
         material: prodFormMaterial.trim(),
         dimensions: prodFormDimensions.trim(),
         description: prodFormDesc.trim(),
-        images: [defaultImg],
+        images: finalImages,
       });
       setSavingProduct(false);
       if (res.success) {
@@ -346,14 +347,14 @@ export const AdminDashboardPage: React.FC = () => {
     } else {
       // Tạo mới sản phẩm
       const res = await createProductInDB({
-        name: prodFormFormTrim(prodFormName),
+        name: prodFormName.trim(),
         code: prodFormCode.trim() || `CL-${Date.now().toString().slice(-4)}`,
         categoryId: prodFormCat,
         price: parsedPrice,
         material: prodFormMaterial.trim(),
         dimensions: prodFormDimensions.trim(),
         description: prodFormDesc.trim(),
-        images: [defaultImg],
+        images: finalImages,
         inStock: true,
       });
       setSavingProduct(false);
@@ -366,10 +367,6 @@ export const AdminDashboardPage: React.FC = () => {
       }
     }
   };
-
-  function prodFormFormTrim(str: string) {
-    return str.trim();
-  }
 
   // Đồng bộ sản phẩm mẫu lên Supabase
   const handleSeedProducts = async () => {
@@ -1322,16 +1319,10 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Link ảnh đại diện (URL)</label>
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/..."
-                  value={prodFormImage}
-                  onChange={(e) => setProdFormImage(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
-                />
-              </div>
+              <ProductImagesManager
+                images={prodFormImages}
+                onChange={setProdFormImages}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Mô tả sản phẩm</label>
