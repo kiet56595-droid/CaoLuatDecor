@@ -31,7 +31,7 @@ export const HeroBanner: React.FC = () => {
 
           {/* Main Title */}
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight text-white">
-            Nội Thất May Đo Cao Cấp <br />
+            Nội Thất Cao Cấp <br />
             <span className="text-[#DFC7A7]">Kiến Tạo Không Gian Sống</span>
           </h1>
 
