@@ -1,14 +1,83 @@
-import React from 'react';
-import { Phone, Mail, MapPin, ChevronUp, ExternalLink, Facebook } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Phone,
+  Mail,
+  MapPin,
+  ChevronUp,
+  ExternalLink,
+  Facebook,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+  CheckCircle2,
+} from 'lucide-react';
 import {
   CONTACT_INFO,
   getTelHref,
   getMailtoHref,
   getFacebookHref,
+  getFacebookEmbedUrl,
   getMapsHref,
 } from '../../config/contact';
 
+interface FbPost {
+  id: number;
+  time: string;
+  caption: string;
+  image: string;
+  likes: number;
+  comments: number;
+  shares: number;
+}
+
+const FB_POSTS: FbPost[] = [
+  {
+    id: 1,
+    time: "2 giờ trước • 🌐",
+    caption: "✨ Bàn giao trọn gói không gian phòng khách hiện đại cho gia chủ tại TP.HCM. Tông gỗ óc chó kết hợp sofa nỉ cao cấp nhập khẩu, may đo chuẩn xác theo diện tích nhà. Cảm ơn quý khách đã tin tưởng xưởng Cao Luật Decor!",
+    image: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=600&auto=format&fit=crop&q=80",
+    likes: 128,
+    comments: 24,
+    shares: 9,
+  },
+  {
+    id: 2,
+    time: "Hôm qua lúc 15:30 • 🌐",
+    caption: "🔨 Trực tiếp tại xưởng sản xuất Cao Luật Decor (Quận 12): Đội thợ mộc đang hoàn thiện hệ tủ bếp Acrylic cốt chống ẩm và bộ bàn ăn Ceramic chống xước để kịp bàn giao cuối tuần.",
+    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80",
+    likes: 96,
+    comments: 15,
+    shares: 4,
+  },
+  {
+    id: 3,
+    time: "3 ngày trước • 🌐",
+    caption: "🛋️ Bộ sưu tập Sofa Da Milano & Bàn Trà Đôi Mặt Đá Ceramic chống trầy, chịu nhiệt cao. Sẵn mẫu trưng bày tại Showroom Bình Dương, kính mời quý khách ghé thăm trải nghiệm!",
+    image: "https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80",
+    likes: 215,
+    comments: 38,
+    shares: 14,
+  },
+  {
+    id: 4,
+    time: "5 ngày trước • 🌐",
+    caption: "🏡 Không gian phòng ngủ Master với hệ giường bọc da Nappa cao cấp và tủ áo cánh kính khung nhôm Anode sang trọng. Thiết kế và thi công chuẩn thực tế 100%.",
+    image: "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&auto=format&fit=crop&q=80",
+    likes: 174,
+    comments: 22,
+    shares: 11,
+  },
+];
+
 export const Footer: React.FC = () => {
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Record<number, boolean>>({});
+
+  const toggleLike = (postId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLikedPosts((prev) => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -121,80 +190,287 @@ export const Footer: React.FC = () => {
 
           {/* CỘT 3: FANPAGE */}
           <div className="space-y-3">
-            <h3 className="font-bold text-[#1A1A1A] text-sm uppercase tracking-wide border-b-2 border-[#1A1A1A] pb-1.5 inline-block">
-              FANPAGE
-            </h3>
+            <div className="flex items-center justify-between border-b-2 border-[#1A1A1A] pb-1.5">
+              <h3 className="font-bold text-[#1A1A1A] text-sm uppercase tracking-wide">
+                FANPAGE
+              </h3>
+              <a
+                href={getFacebookHref()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-[#1877F2] hover:text-[#166FE5] flex items-center gap-1 font-semibold transition-colors"
+                title="Mở Fanpage trên Facebook thực tế"
+              >
+                <span>Mở trang FB</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
 
-            {/* Fanpage Card Container (Facebook widget simulation) */}
-            <div className="border border-[#DADDE1] rounded-lg overflow-hidden bg-white shadow-sm hover:shadow transition-shadow">
-              {/* Cover Banner */}
-              <div className="relative h-28 bg-[#29231F] overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80"
-                  alt="Fanpage Cao Luật Decor"
-                  className="w-full h-full object-cover opacity-85"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
-                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#1877F2] text-white flex items-center justify-center shadow">
-                  <Facebook className="w-3.5 h-3.5 fill-current" />
-                </div>
-                <div className="absolute bottom-2 left-2 text-white text-[11px] font-bold drop-shadow">
-                  NỘI THẤT CAO CẤP CAO LUẬT
-                </div>
-              </div>
-
-              {/* Profile Bar */}
-              <div className="p-3 space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-full bg-[#654329] text-[#DFC7A7] border-2 border-white flex items-center justify-center font-bold text-sm shadow -mt-6">
-                    CL
-                  </div>
-                  <div>
-                    <a
-                      href={getFacebookHref()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-bold text-[13px] text-[#1C1E21] leading-tight hover:underline cursor-pointer block"
-                    >
-                      Cao Luật Decor
-                    </a>
-                    <span className="text-[11px] text-[#65676B]">
-                      3,9K người theo dõi
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-[#4B4C4F] line-clamp-2 leading-snug">
-                  Chuyên thiết kế - thi công nội thất trọn gói, giá xưởng. Cung cấp sofa, bàn ghế ăn cao cấp...
-                </p>
-
-                <div className="text-[11px] text-[#65676B] flex items-center gap-1">
-                  <span>💼 Dịch vụ trang trí nội thất</span>
-                  <span>•</span>
-                  <span>📞 0909 123 456</span>
-                </div>
-
+            {/* Màn hình nhỏ Fanpage chuyên biệt - Cuộn lướt bài viết mượt mà 100% & link đến Facebook thực tế */}
+            <div className="border border-[#DADDE1] rounded-lg overflow-hidden bg-[#F0F2F5] shadow-sm h-[340px] flex flex-col">
+              {/* Thanh điều hướng giả lập mini browser / mobile app */}
+              <div className="bg-[#1877F2] text-white px-3 py-1.5 flex items-center justify-between text-xs shrink-0 shadow-sm">
                 <a
                   href={getFacebookHref()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-semibold text-xs transition-colors shadow-sm"
+                  className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+                  title="Mở Facebook Cao Luật Decor"
                 >
-                  <Facebook className="w-3.5 h-3.5 fill-current" />
-                  <span>Theo dõi</span>
+                  <div className="w-5 h-5 rounded-full bg-white text-[#1877F2] flex items-center justify-center font-bold text-xs">
+                    f
+                  </div>
+                  <span className="font-semibold text-[11px] tracking-wide">
+                    fb.com/caoluatdecor
+                  </span>
                 </a>
+                <a
+                  href={getFacebookHref()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
+                  title="Mở trang Facebook thực tế"
+                >
+                  <span>Mở trang</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+
+              {/* Vùng màn hình lướt bài viết (Scrollable Feed) */}
+              <div className="overflow-y-auto flex-1 p-2 space-y-2.5 text-xs bg-[#F0F2F5]">
+                {/* Header trang cá nhân / Fanpage */}
+                <div className="bg-white rounded-lg overflow-hidden border border-[#E4E6EB] shadow-xs">
+                  {/* Ảnh bìa */}
+                  <div className="relative h-16 bg-[#29231F] overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80"
+                      alt="Ảnh bìa Cao Luật Decor"
+                      className="w-full h-full object-cover opacity-85"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  </div>
+
+                  {/* Thông tin & nút theo dõi */}
+                  <div className="px-3 pb-3 pt-1">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-11 h-11 rounded-full bg-[#654329] text-[#DFC7A7] border-2 border-white flex items-center justify-center font-bold text-sm shadow shrink-0 -mt-5">
+                        CL
+                      </div>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center gap-1">
+                          <a
+                            href={getFacebookHref()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-[13px] text-[#1C1E21] hover:underline truncate block"
+                          >
+                            Cao Luật Decor
+                          </a>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#1877F2] shrink-0 fill-[#1877F2]" />
+                        </div>
+                        <p className="text-[10px] text-[#65676B]">
+                          3,9K người theo dõi • Thiết kế nội thất
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Nút hành động */}
+                    <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsFollowing(!isFollowing)}
+                        className={`w-full py-1 px-2 rounded flex items-center justify-center gap-1 font-semibold text-[11px] transition-colors shadow-xs ${
+                          isFollowing
+                            ? 'bg-[#E4E6EB] text-[#1C1E21] hover:bg-[#D8DADF]'
+                            : 'bg-[#1877F2] text-white hover:bg-[#166FE5]'
+                        }`}
+                      >
+                        <Facebook className="w-3 h-3 fill-current" />
+                        <span>{isFollowing ? '✓ Đang theo dõi' : 'Theo dõi'}</span>
+                      </button>
+
+                      <a
+                        href={getFacebookHref()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-[#E4E6EB] hover:bg-[#D8DADF] text-[#1C1E21] py-1 px-2 rounded flex items-center justify-center gap-1 font-semibold text-[11px] transition-colors shadow-xs"
+                      >
+                        <MessageCircle className="w-3 h-3 text-[#1877F2]" />
+                        <span>Nhắn tin</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thanh trạng thái bảng tin */}
+                <div className="flex items-center justify-between px-1 text-[10px] font-semibold text-[#65676B] uppercase tracking-wider">
+                  <span>Bài viết mới nhất</span>
+                  <span className="flex items-center gap-1 text-[#42B72A]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#42B72A] animate-pulse" />
+                    Trực tuyến
+                  </span>
+                </div>
+
+                {/* Danh sách bài viết có thể cuộn lướt (Feed items) */}
+                {FB_POSTS.map((post) => {
+                  const isLiked = !!likedPosts[post.id];
+                  const totalLikes = post.likes + (isLiked ? 1 : 0);
+
+                  return (
+                    <article
+                      key={post.id}
+                      className="bg-white rounded-lg p-3 border border-[#E4E6EB] shadow-xs space-y-2 hover:border-[#1877F2]/40 transition-colors"
+                    >
+                      {/* Tiêu đề bài viết */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-[#654329] text-[#DFC7A7] flex items-center justify-center font-bold text-[10px] shrink-0">
+                            CL
+                          </div>
+                          <div>
+                            <a
+                              href={getFacebookHref()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-bold text-[11px] text-[#1C1E21] hover:underline leading-tight block"
+                            >
+                              Cao Luật Decor Nội Thất
+                            </a>
+                            <p className="text-[9px] text-[#65676B] leading-none">
+                              {post.time}
+                            </p>
+                          </div>
+                        </div>
+
+                        <a
+                          href={getFacebookHref()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-[#1877F2] hover:underline flex items-center gap-0.5 shrink-0"
+                          title="Xem bài này trên Facebook"
+                        >
+                          <span>Xem FB</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
+
+                      {/* Nội dung bài viết */}
+                      <p className="text-[11px] text-[#1C1E21] leading-relaxed">
+                        {post.caption}
+                      </p>
+
+                      {/* Ảnh bài viết kèm link */}
+                      <a
+                        href={getFacebookHref()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-md overflow-hidden border border-[#E4E6EB] group relative cursor-pointer"
+                        title="Bấm để xem ảnh và bài viết trên Facebook"
+                      >
+                        <img
+                          src={post.image}
+                          alt="Nội thất Cao Luật Decor"
+                          className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded flex items-center gap-1 group-hover:bg-[#1877F2] transition-colors">
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>Mở trên Facebook</span>
+                        </div>
+                      </a>
+
+                      {/* Lượt tương tác */}
+                      <div className="flex items-center justify-between text-[10px] text-[#65676B] pt-1 border-b border-[#F0F2F5] pb-1.5">
+                        <div className="flex items-center gap-1">
+                          <span className="w-4 h-4 rounded-full bg-[#1877F2] text-white flex items-center justify-center text-[9px]">
+                            👍
+                          </span>
+                          <span>{totalLikes}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>{post.comments} bình luận</span>
+                          <span>•</span>
+                          <span>{post.shares} chia sẻ</span>
+                        </div>
+                      </div>
+
+                      {/* Nút Like - Bình luận - Chia sẻ */}
+                      <div className="grid grid-cols-3 gap-1 pt-0.5 text-[#65676B]">
+                        <button
+                          type="button"
+                          onClick={(e) => toggleLike(post.id, e)}
+                          className={`py-1 rounded flex items-center justify-center gap-1 font-semibold text-[10px] transition-colors hover:bg-[#F2F2F2] ${
+                            isLiked ? 'text-[#1877F2]' : ''
+                          }`}
+                        >
+                          <ThumbsUp className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
+                          <span>{isLiked ? 'Đã thích' : 'Thích'}</span>
+                        </button>
+
+                        <a
+                          href={getFacebookHref()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-1 rounded flex items-center justify-center gap-1 font-semibold text-[10px] transition-colors hover:bg-[#F2F2F2]"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          <span>Bình luận</span>
+                        </a>
+
+                        <a
+                          href={getFacebookHref()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-1 rounded flex items-center justify-center gap-1 font-semibold text-[10px] transition-colors hover:bg-[#F2F2F2]"
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>Chia sẻ</span>
+                        </a>
+                      </div>
+                    </article>
+                  );
+                })}
+
+                {/* Chân trang danh sách bài viết */}
+                <div className="text-center py-2 space-y-1.5">
+                  <p className="text-[10px] text-[#65676B]">
+                    Bạn đang xem các bài viết mới nhất từ Cao Luật Decor
+                  </p>
+                  <a
+                    href={getFacebookHref()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-[#1877F2] hover:bg-[#166FE5] text-white px-3 py-1.5 rounded-full font-semibold text-[11px] shadow-sm transition-colors"
+                  >
+                    <Facebook className="w-3.5 h-3.5 fill-current" />
+                    <span>Xem toàn bộ trên Facebook thực tế</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
 
           {/* CỘT 4: CHỈ ĐƯỜNG */}
           <div className="space-y-3 lg:border-l lg:border-[#E5E7EB] lg:pl-6">
-            <h3 className="font-bold text-[#1A1A1A] text-sm uppercase tracking-wide border-b-2 border-[#1A1A1A] pb-1.5 inline-block">
-              CHỈ ĐƯỜNG
-            </h3>
+            <div className="flex items-center justify-between border-b-2 border-[#1A1A1A] pb-1.5">
+              <h3 className="font-bold text-[#1A1A1A] text-sm uppercase tracking-wide">
+                CHỈ ĐƯỜNG
+              </h3>
+              <a
+                href={getMapsHref()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-[#1877F2] hover:text-[#166FE5] flex items-center gap-1 font-semibold transition-colors"
+                title="Mở trong Google Maps"
+              >
+                <span>Mở trong Maps</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
 
             {/* Embedded Google Maps Container */}
-            <div className="relative border border-[#DADDE1] rounded-lg overflow-hidden bg-white shadow-sm h-64">
+            <div className="relative border border-[#DADDE1] rounded-lg overflow-hidden bg-white shadow-sm h-[340px]">
               <iframe
                 title="Bản đồ chỉ đường Cao Luật Decor"
                 src={CONTACT_INFO.showroom.googleMapsEmbedUrl}
@@ -206,17 +482,6 @@ export const Footer: React.FC = () => {
                 referrerPolicy="no-referrer-when-downgrade"
                 className="w-full h-full"
               />
-
-              {/* Overlay button 'Mở trong Maps' */}
-              <a
-                href={getMapsHref()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute top-2 left-2 bg-white/95 hover:bg-white text-[#1A1A1A] text-[11px] font-semibold px-2.5 py-1 rounded shadow border border-[#DADDE1] flex items-center gap-1 transition-colors"
-              >
-                <span>Mở trong Maps</span>
-                <ExternalLink className="w-3 h-3 text-[#1877F2]" />
-              </a>
             </div>
           </div>
         </div>

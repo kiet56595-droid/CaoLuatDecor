@@ -17,7 +17,7 @@ export const CategoryGrid: React.FC = () => {
             Không Gian Sống Đầy Đủ Tiện Nghi
           </h2>
           <p className="text-xs sm:text-sm text-[#6E665E]">
-            Đầy đủ nội thất phòng khách, phòng ngủ, phòng ăn và tủ bếp may đo chuẩn kích thước.
+            Đầy đủ nội thất phòng khách, phòng ngủ, phòng ăn và tủ bếp đo đạt chuẩn kích thước.
           </p>
         </div>
 

@@ -122,4 +122,8 @@ export const getMailtoHref = (subject = "Tư vấn nội thất Cao Luật Decor
   `mailto:${CONTACT_INFO.email.url}?subject=${encodeURIComponent(subject)}`;
 export const getZaloHref = () => CONTACT_INFO.zalo.url;
 export const getFacebookHref = () => CONTACT_INFO.facebook.url;
+export const getFacebookEmbedUrl = (width = 340, height = 288) => {
+  const encodedUrl = encodeURIComponent(CONTACT_INFO.facebook.url);
+  return `https://www.facebook.com/plugins/page.php?href=${encodedUrl}&tabs=timeline&width=${width}&height=${height}&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false&lazy=true`;
+};
 export const getMapsHref = () => CONTACT_INFO.showroom.googleMapsUrl;

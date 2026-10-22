@@ -18,7 +18,7 @@ export const BrandAdvantages: React.FC = () => {
     {
       icon: Hammer,
       step: '03',
-      title: 'Sản Xuất May Đo Tại Xưởng',
+      title: 'Sản Xuất Tại Xưởng',
       desc: 'Gia công trực tiếp từ gỗ chống ẩm An Cường, da cao cấp và đá tự nhiên trên dây chuyền máy móc chuẩn xác.',
     },
     {

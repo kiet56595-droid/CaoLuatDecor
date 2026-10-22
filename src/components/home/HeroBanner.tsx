@@ -26,7 +26,7 @@ export const HeroBanner: React.FC = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-[#654329]/80 px-3.5 py-1.5 rounded-full border border-[#C5A880]/30 text-xs text-[#DFC7A7] font-medium tracking-wide">
             <Sparkles className="w-3.5 h-3.5 text-[#DFC7A7]" />
-            <span>XƯỞNG SẢN XUẤT NỘI THẤT MAY ĐO CAO CẤP</span>
+            <span>XƯỞNG SẢN XUẤT NỘI THẤT CAO CẤP</span>
           </div>
 
           {/* Main Title */}
