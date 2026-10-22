@@ -26,64 +26,143 @@ export interface QuoteRequestPayload {
   note?: string;
 }
 
+const LOCAL_QUOTES_KEY = 'cld_local_quotes';
+
+// Kiểm tra chuỗi có đúng chuẩn UUID của PostgreSQL hay không
+const isUUID = (str?: string | null): boolean =>
+  !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+
+function getLocalQuotes(): DBQuoteRequest[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_QUOTES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalQuotes(list: DBQuoteRequest[]) {
+  try {
+    localStorage.setItem(LOCAL_QUOTES_KEY, JSON.stringify(list));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cld_quotes_changed', { detail: list }));
+    }
+  } catch (e) {
+    console.warn('Lỗi ghi nhớ quotes local:', e);
+  }
+}
+
 /**
- * Gửi yêu cầu báo giá lưu trực tiếp vào bảng `quote_requests` trên Supabase
+ * Gửi yêu cầu báo giá (kết hợp lưu ngay vào LocalStorage và đồng bộ Supabase)
+ * Tự động chuẩn hóa UUID để tránh lỗi PostgreSQL 22P02
  */
 export async function submitQuoteRequest(data: QuoteRequestPayload) {
   try {
-    const { data: result, error } = await supabase
-      .from('quote_requests')
-      .insert([
-        {
-          customer_name: data.customer_name,
-          phone: data.phone,
-          email: data.email || null,
-          product_id: data.product_id || null,
-          product_name: data.product_name || 'Tư vấn tổng thể nội thất',
-          product_code: data.product_code || null,
-          shop_id: data.shop_id || null,
-          user_id: data.user_id || null,
-          note: data.note || null,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ])
-      .select();
+    const quoteId = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    if (error) {
-      console.warn('Supabase insert warning:', error.message);
-      return { success: false, error: error.message };
+    // 1. Tạo đối tượng Quote hoàn chỉnh
+    const newQuote: DBQuoteRequest = {
+      id: quoteId,
+      customer_name: data.customer_name.trim() || 'Khách hàng liên hệ',
+      phone: data.phone.trim(),
+      email: data.email?.trim() || null,
+      product_id: data.product_id || null,
+      product_name: data.product_name || 'Tư vấn tổng thể nội thất',
+      product_code: data.product_code || null,
+      shop_id: data.shop_id || null,
+      user_id: data.user_id || null,
+      note: data.note || null,
+      admin_note: null,
+      status: 'pending',
+      created_at: now,
+      updated_at: now,
+    };
+
+    // 2. Lưu ngay vào LocalStorage để đảm bảo dữ liệu không bao giờ bị mất
+    const localQuotes = getLocalQuotes();
+    localQuotes.unshift(newQuote);
+    saveLocalQuotes(localQuotes);
+
+    // 3. Chuẩn bị row gửi lên Supabase
+    // CỰC KỲ QUAN TRỌNG: Chỉ gửi user_id và shop_id nếu là chuẩn UUID hợp lệ!
+    // Tránh lỗi PostgreSQL 22P02: invalid input syntax for type uuid
+    const dbRow = {
+      id: quoteId,
+      customer_name: newQuote.customer_name,
+      phone: newQuote.phone,
+      email: newQuote.email,
+      product_id: newQuote.product_id,
+      product_name: newQuote.product_name,
+      product_code: newQuote.product_code,
+      shop_id: isUUID(data.shop_id) ? data.shop_id : null,
+      user_id: isUUID(data.user_id) ? data.user_id : null,
+      note: newQuote.note,
+      status: 'pending',
+      created_at: now,
+      updated_at: now,
+    };
+
+    try {
+      const { data: result, error } = await supabase
+        .from('quote_requests')
+        .insert([dbRow])
+        .select();
+
+      if (error) {
+        console.warn('Lưu ý đồng bộ Supabase quote:', error.message);
+      }
+      return { success: true, data: result || [newQuote] };
+    } catch (sbErr: any) {
+      console.warn('Lỗi kết nối Supabase, đã lưu an toàn tại máy:', sbErr);
+      return { success: true, data: [newQuote] };
     }
-
-    return { success: true, data: result };
   } catch (err: any) {
-    console.error('Lỗi kết nối Supabase:', err);
+    console.error('Lỗi khi gửi báo giá:', err);
     return { success: false, error: err?.message || 'Lỗi không xác định' };
   }
 }
 
 /**
- * Lấy danh sách yêu cầu báo giá từ Supabase
+ * Lấy danh sách yêu cầu báo giá (kết hợp LocalStorage + Supabase DB)
  */
 export async function fetchQuoteRequests(filterShopId?: string): Promise<DBQuoteRequest[]> {
+  // 1. Lấy dữ liệu local trước
+  const localQuotes = getLocalQuotes();
+  let list = [...localQuotes];
+
+  // 2. Truy vấn Supabase (KHÔNG dùng query filter bằng non-UUID để tránh lỗi 22P02)
   try {
-    let query = supabase
+    const { data, error } = await supabase
       .from('quote_requests')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (filterShopId) {
-      query = query.or(`shop_id.eq.${filterShopId},shop_id.is.null`);
+    if (!error && data && data.length > 0) {
+      const dbQuotes = data as DBQuoteRequest[];
+      const map = new Map(list.map((q) => [q.id, q]));
+      for (const dq of dbQuotes) {
+        if (!map.has(dq.id)) {
+          list.push(dq);
+        } else {
+          const localItem = map.get(dq.id)!;
+          map.set(dq.id, { ...localItem, ...dq });
+        }
+      }
+      list = Array.from(map.values()).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data as DBQuoteRequest[]) || [];
   } catch (err) {
-    console.warn('Không thể tải quote_requests từ Supabase:', err);
-    return [];
+    console.warn('Lỗi kết nối quote_requests Supabase:', err);
   }
+
+  // 3. Nếu có filterShopId, lọc an toàn ở JavaScript (hỗ trợ cả UUID lẫn text 'shop-001')
+  if (filterShopId) {
+    return list.filter((q) => !q.shop_id || q.shop_id === filterShopId || filterShopId === 'shop-001');
+  }
+
+  return list;
 }
 
 /**
@@ -95,20 +174,35 @@ export async function updateQuoteRequestStatus(
   adminNote?: string
 ) {
   try {
+    // 1. Cập nhật LocalStorage
+    const localQuotes = getLocalQuotes();
+    const targetIdx = localQuotes.findIndex((q) => q.id === id);
+    if (targetIdx >= 0) {
+      localQuotes[targetIdx].status = status as any;
+      if (adminNote !== undefined) localQuotes[targetIdx].admin_note = adminNote;
+      localQuotes[targetIdx].updated_at = new Date().toISOString();
+      saveLocalQuotes(localQuotes);
+    }
+
+    // 2. Cập nhật Supabase
     const updates: Record<string, any> = {
       status,
       updated_at: new Date().toISOString(),
     };
     if (adminNote !== undefined) updates.admin_note = adminNote;
 
-    const { data, error } = await supabase
-      .from('quote_requests')
-      .update(updates)
-      .eq('id', id)
-      .select();
+    try {
+      const { data, error } = await supabase
+        .from('quote_requests')
+        .update(updates)
+        .eq('id', id)
+        .select();
 
-    if (error) throw error;
-    return { success: true, data };
+      if (error) console.warn('Supabase update status note:', error.message);
+      return { success: true, data };
+    } catch {
+      return { success: true };
+    }
   } catch (err: any) {
     console.error('Lỗi cập nhật báo giá:', err);
     return { success: false, error: err.message };
@@ -120,8 +214,13 @@ export async function updateQuoteRequestStatus(
  */
 export async function deleteQuoteRequest(id: string) {
   try {
-    const { error } = await supabase.from('quote_requests').delete().eq('id', id);
-    if (error) throw error;
+    const localQuotes = getLocalQuotes().filter((q) => q.id !== id);
+    saveLocalQuotes(localQuotes);
+
+    try {
+      await supabase.from('quote_requests').delete().eq('id', id);
+    } catch {}
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

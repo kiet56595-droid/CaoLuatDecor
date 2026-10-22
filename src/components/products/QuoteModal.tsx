@@ -46,6 +46,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
       await submitQuoteRequest({
         customer_name: fullName.trim() || 'Khách hàng liên hệ',
         phone: phone.trim(),
+        email: user?.email || undefined,
         product_id: product?.id,
         product_name: productName,
         product_code: productCode,

@@ -25,17 +25,23 @@ export const AccountPage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      setLoadingQuotes(true);
-      fetchQuoteRequests().then((data) => {
-        const mine = data.filter(
-          (q) =>
-            (user.id && q.user_id === user.id) ||
-            (user.phone && q.phone === user.phone) ||
-            (user.email && q.email === user.email)
-        );
-        setUserQuotes(mine);
-        setLoadingQuotes(false);
-      });
+      const loadUserQuotes = () => {
+        setLoadingQuotes(true);
+        fetchQuoteRequests().then((data) => {
+          const mine = data.filter(
+            (q) =>
+              (user.id && q.user_id === user.id) ||
+              (user.phone && q.phone === user.phone) ||
+              (user.email && q.email && q.email.toLowerCase() === user.email.toLowerCase())
+          );
+          setUserQuotes(mine);
+          setLoadingQuotes(false);
+        });
+      };
+
+      loadUserQuotes();
+      window.addEventListener('cld_quotes_changed', loadUserQuotes);
+      return () => window.removeEventListener('cld_quotes_changed', loadUserQuotes);
     }
   }, [user]);
 

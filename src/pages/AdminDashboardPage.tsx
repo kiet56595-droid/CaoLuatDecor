@@ -150,11 +150,18 @@ export const AdminDashboardPage: React.FC = () => {
     if (isAuthenticated && user?.role === 'ADMIN') {
       loadAllData();
     }
-    const handleSync = () => {
+    const handleProdSync = () => {
       fetchProductsFromDB().then((pData) => setProducts(pData));
     };
-    window.addEventListener('cld_products_changed', handleSync);
-    return () => window.removeEventListener('cld_products_changed', handleSync);
+    const handleQuoteSync = () => {
+      fetchQuoteRequests().then((qData) => setQuotes(qData));
+    };
+    window.addEventListener('cld_products_changed', handleProdSync);
+    window.addEventListener('cld_quotes_changed', handleQuoteSync);
+    return () => {
+      window.removeEventListener('cld_products_changed', handleProdSync);
+      window.removeEventListener('cld_quotes_changed', handleQuoteSync);
+    };
   }, [isAuthenticated, user, loadAllData]);
 
   // Hành động với User

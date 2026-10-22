@@ -106,11 +106,18 @@ export const ShopDashboardPage: React.FC = () => {
     if (isAuthenticated && user?.role === 'SHOP_OWNER') {
       loadShopData();
     }
-    const handleSync = () => {
+    const handleProdSync = () => {
       fetchProductsFromDB().then((pData) => setProducts(pData));
     };
-    window.addEventListener('cld_products_changed', handleSync);
-    return () => window.removeEventListener('cld_products_changed', handleSync);
+    const handleQuoteSync = () => {
+      fetchQuoteRequests(user?.id).then((qData) => setQuotes(qData));
+    };
+    window.addEventListener('cld_products_changed', handleProdSync);
+    window.addEventListener('cld_quotes_changed', handleQuoteSync);
+    return () => {
+      window.removeEventListener('cld_products_changed', handleProdSync);
+      window.removeEventListener('cld_quotes_changed', handleQuoteSync);
+    };
   }, [isAuthenticated, user, loadShopData]);
 
   // Hành động cập nhật kho
