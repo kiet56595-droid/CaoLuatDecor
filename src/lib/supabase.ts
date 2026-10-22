@@ -218,6 +218,9 @@ function getLocalCustomProducts(): Product[] {
 function saveLocalCustomProducts(list: Product[]) {
   try {
     localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(list));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cld_products_changed', { detail: list }));
+    }
   } catch (e) {
     console.warn('Lỗi ghi nhớ sản phẩm local:', e);
   }
@@ -449,6 +452,12 @@ export async function updateProductInDB(id: string, updates: Partial<Product>) {
     const currentList = await fetchProductsFromDB();
     const existing = currentList.find((p) => p.id === id) || PRODUCTS.find((p) => p.id === id);
 
+    const cleanPrice = updates.price !== undefined ? updates.price : (existing?.price ?? null);
+    const computedDisplayPrice =
+      cleanPrice !== null && cleanPrice !== undefined && cleanPrice > 0
+        ? `${cleanPrice.toLocaleString('vi-VN')} đ`
+        : (updates.displayPrice !== undefined ? updates.displayPrice : existing?.displayPrice);
+
     const mergedProduct: Product = {
       id,
       slug: updates.slug || existing?.slug || id,
@@ -456,8 +465,8 @@ export async function updateProductInDB(id: string, updates: Partial<Product>) {
       code: updates.code || existing?.code || '',
       categoryId: updates.categoryId || existing?.categoryId || 'sofa-phong-khach',
       categoryName: updates.categoryName || existing?.categoryName || '',
-      price: updates.price !== undefined ? updates.price : (existing?.price ?? null),
-      displayPrice: updates.displayPrice !== undefined ? updates.displayPrice : existing?.displayPrice,
+      price: cleanPrice,
+      displayPrice: computedDisplayPrice,
       images: updates.images !== undefined ? updates.images : (existing?.images || []),
       shortDescription: updates.shortDescription !== undefined ? updates.shortDescription : (existing?.shortDescription || ''),
       description: updates.description !== undefined ? updates.description : (existing?.description || ''),

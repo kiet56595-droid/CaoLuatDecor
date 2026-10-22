@@ -10,9 +10,10 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onOpenQuote }) => {
-  const formattedPrice = product.price
-    ? `${product.price.toLocaleString('vi-VN')} đ`
-    : product.displayPrice || 'Liên hệ báo giá';
+  const formattedPrice =
+    product.price !== null && product.price !== undefined && product.price > 0
+      ? `${product.price.toLocaleString('vi-VN')} đ`
+      : product.displayPrice || 'Liên hệ báo giá';
 
   return (
     <div className="luxury-card bg-white rounded-lg border border-[#E7DCce] overflow-hidden flex flex-col h-full group">

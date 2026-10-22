@@ -106,6 +106,11 @@ export const ShopDashboardPage: React.FC = () => {
     if (isAuthenticated && user?.role === 'SHOP_OWNER') {
       loadShopData();
     }
+    const handleSync = () => {
+      fetchProductsFromDB().then((pData) => setProducts(pData));
+    };
+    window.addEventListener('cld_products_changed', handleSync);
+    return () => window.removeEventListener('cld_products_changed', handleSync);
   }, [isAuthenticated, user, loadShopData]);
 
   // Hành động cập nhật kho
@@ -161,7 +166,8 @@ export const ShopDashboardPage: React.FC = () => {
     if (!prodName.trim()) return;
 
     setSavingProduct(true);
-    const parsedPrice = prodPrice ? Number(prodPrice.replace(/\D/g, '')) : null;
+    const cleanPriceStr = (prodPrice || '').toString().trim().replace(/[^\d]/g, '');
+    const parsedPrice = cleanPriceStr.length > 0 ? Number(cleanPriceStr) : null;
     const defaultImg =
       'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80';
     const finalImages = prodImages.length > 0 ? prodImages : [defaultImg];

@@ -46,12 +46,38 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
   const [searchQuery, setSearchQuery] = useState<string>(queryParam);
   const [sortBy, setSortBy] = useState<SortOption>('default');
-  const [productsList, setProductsList] = useState<Product[]>(PRODUCTS);
+  const [productsList, setProductsList] = useState<Product[]>(() => {
+    try {
+      const raw = localStorage.getItem('cld_custom_products');
+      const delRaw = localStorage.getItem('cld_deleted_product_ids');
+      const delSet = new Set(delRaw ? JSON.parse(delRaw) : []);
+      if (raw) {
+        const localList: Product[] = JSON.parse(raw);
+        const localMap = new Map(localList.map((p) => [p.id, p]));
+        let list = PRODUCTS.map((p) => localMap.get(p.id) || p);
+        const existingIds = new Set(list.map((p) => p.id));
+        for (const cp of localList) {
+          if (!existingIds.has(cp.id)) list.unshift(cp);
+        }
+        if (delSet.size > 0) list = list.filter((p) => !delSet.has(p.id));
+        return list;
+      }
+    } catch {}
+    return PRODUCTS;
+  });
 
   useEffect(() => {
-    fetchProductsFromDB().then((data) => {
-      if (data && data.length > 0) setProductsList(data);
-    });
+    const loadProducts = () => {
+      fetchProductsFromDB().then((data) => {
+        if (data && data.length > 0) setProductsList(data);
+      });
+    };
+
+    loadProducts();
+
+    // Lắng nghe sự kiện đồng bộ khi có cập nhật giá hoặc ảnh từ Shop/Admin Dashboard
+    window.addEventListener('cld_products_changed', loadProducts);
+    return () => window.removeEventListener('cld_products_changed', loadProducts);
   }, []);
 
   // Keep state in sync with URL search params
@@ -109,7 +135,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenQuote }) => {
       }
       return 0;
     });
-  }, [selectedCategory, searchQuery, sortBy]);
+  }, [productsList, selectedCategory, searchQuery, sortBy]);
 
   const title = CATEGORY_DISPLAY_NAMES[selectedCategory] ||
     CATEGORIES.find((c) => c.id === selectedCategory)?.name ||

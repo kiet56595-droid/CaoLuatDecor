@@ -37,7 +37,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onOpenQuot
   const { user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(() => {
-    return PRODUCTS.find((p) => p.slug === slug) || null;
+    try {
+      const raw = localStorage.getItem('cld_custom_products');
+      if (raw) {
+        const localList: Product[] = JSON.parse(raw);
+        const match = localList.find((p) => p.slug === slug || p.id === slug);
+        if (match) return match;
+      }
+    } catch {}
+    return PRODUCTS.find((p) => p.slug === slug || p.id === slug) || null;
   });
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -56,10 +64,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onOpenQuot
     setActiveImageIndex(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    fetchProductsFromDB().then((list) => {
-      const found = list.find((p) => p.slug === slug);
-      if (found) setProduct(found);
-    });
+    const loadProductData = () => {
+      fetchProductsFromDB().then((list) => {
+        const found = list.find((p) => p.slug === slug || p.id === slug);
+        if (found) setProduct(found);
+      });
+    };
+
+    loadProductData();
+
+    // Lắng nghe sự kiện đồng bộ khi có cập nhật giá hoặc ảnh từ Quản lý sản phẩm
+    window.addEventListener('cld_products_changed', loadProductData);
+    return () => window.removeEventListener('cld_products_changed', loadProductData);
   }, [slug]);
 
   useEffect(() => {
@@ -133,9 +149,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onOpenQuot
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const formattedPrice = product.price
-    ? `${product.price.toLocaleString('vi-VN')} đ`
-    : product.displayPrice || 'Liên hệ báo giá';
+  const formattedPrice =
+    product.price !== null && product.price !== undefined && product.price > 0
+      ? `${product.price.toLocaleString('vi-VN')} đ`
+      : product.displayPrice || 'Liên hệ báo giá';
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] pb-20">

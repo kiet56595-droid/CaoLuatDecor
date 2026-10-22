@@ -150,6 +150,11 @@ export const AdminDashboardPage: React.FC = () => {
     if (isAuthenticated && user?.role === 'ADMIN') {
       loadAllData();
     }
+    const handleSync = () => {
+      fetchProductsFromDB().then((pData) => setProducts(pData));
+    };
+    window.addEventListener('cld_products_changed', handleSync);
+    return () => window.removeEventListener('cld_products_changed', handleSync);
   }, [isAuthenticated, user, loadAllData]);
 
   // Hành động với User
@@ -320,7 +325,8 @@ export const AdminDashboardPage: React.FC = () => {
     if (!prodFormName.trim()) return;
 
     setSavingProduct(true);
-    const parsedPrice = prodFormPrice ? Number(prodFormPrice.replace(/\D/g, '')) : null;
+    const cleanPriceStr = (prodFormPrice || '').toString().trim().replace(/[^\d]/g, '');
+    const parsedPrice = cleanPriceStr.length > 0 ? Number(cleanPriceStr) : null;
     const defaultImg =
       'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80';
     const finalImages = prodFormImages.length > 0 ? prodFormImages : [defaultImg];

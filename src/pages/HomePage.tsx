@@ -14,12 +14,37 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onOpenQuote }) => {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const raw = localStorage.getItem('cld_custom_products');
+      const delRaw = localStorage.getItem('cld_deleted_product_ids');
+      const delSet = new Set(delRaw ? JSON.parse(delRaw) : []);
+      if (raw) {
+        const localList: Product[] = JSON.parse(raw);
+        const localMap = new Map(localList.map((p) => [p.id, p]));
+        let list = PRODUCTS.map((p) => localMap.get(p.id) || p);
+        const existingIds = new Set(list.map((p) => p.id));
+        for (const cp of localList) {
+          if (!existingIds.has(cp.id)) list.unshift(cp);
+        }
+        if (delSet.size > 0) list = list.filter((p) => !delSet.has(p.id));
+        return list;
+      }
+    } catch {}
+    return PRODUCTS;
+  });
 
   useEffect(() => {
-    fetchProductsFromDB().then((data) => {
-      if (data && data.length > 0) setProducts(data);
-    });
+    const loadHomeProducts = () => {
+      fetchProductsFromDB().then((data) => {
+        if (data && data.length > 0) setProducts(data);
+      });
+    };
+
+    loadHomeProducts();
+
+    window.addEventListener('cld_products_changed', loadHomeProducts);
+    return () => window.removeEventListener('cld_products_changed', loadHomeProducts);
   }, []);
 
   return (
