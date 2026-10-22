@@ -33,7 +33,8 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const location = useLocation();
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [quoteProduct, setQuoteProduct] = useState<Product | null>(null);
 
@@ -47,80 +48,90 @@ export const App: React.FC = () => {
     setQuoteProduct(null);
   };
 
+  // Ẩn TopBar, Header, Footer và nút liên hệ nổi trên trang Quản trị Admin và Dashboard Xưởng
+  // để giao diện quản lý có toàn bộ màn hình, sidebar cố định chuẩn và không bị cuộn che lấp
+  const isDashboard =
+    location.pathname.startsWith('/admin') || location.pathname.startsWith('/shop');
+
+  return (
+    <>
+      <ScrollToTop />
+      <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#29231F] selection:bg-[#654329] selection:text-white">
+        {/* Top Info Bar & Storefront Header (chỉ hiển thị cho khách hàng xem website) */}
+        {!isDashboard && <TopBar />}
+        {!isDashboard && <Header onOpenQuoteModal={() => handleOpenQuote(null)} />}
+
+        {/* Main Routed Content */}
+        <div className="flex-1 flex flex-col">
+          <Routes>
+            <Route path="/" element={<HomePage onOpenQuote={handleOpenQuote} />} />
+            <Route
+              path="/san-pham"
+              element={<ProductsPage onOpenQuote={handleOpenQuote} />}
+            />
+            <Route
+              path="/san-pham/:slug"
+              element={<ProductDetailPage onOpenQuote={handleOpenQuote} />}
+            />
+            <Route path="/danh-muc" element={<CategoriesPage />} />
+            <Route path="/du-an" element={<Navigate to="/san-pham" replace />} />
+            <Route path="/gioi-thieu" element={<Navigate to="/san-pham" replace />} />
+            <Route path="/lien-he" element={<Navigate to="/san-pham" replace />} />
+
+            {/* ── Protected: Chỉ dành cho Khách hàng đã đăng nhập ── */}
+            <Route
+              path="/tai-khoan/*"
+              element={
+                <ProtectedRoute allowedRoles={['CUSTOMER', 'SHOP_OWNER', 'ADMIN']} redirectTo="/">
+                  <AccountPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Protected: Dành cho Chủ Shop ── */}
+            <Route
+              path="/shop/*"
+              element={
+                <ProtectedRoute allowedRoles={['SHOP_OWNER']} redirectTo="/">
+                  <ShopDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Protected: Dành cho Quản trị viên (Admin) ── */}
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']} redirectTo="/">
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </div>
+
+        {/* Footer & Floating Contact Widget */}
+        {!isDashboard && <Footer />}
+        {!isDashboard && <FloatingContact onOpenQuoteModal={() => handleOpenQuote(null)} />}
+
+        {/* Global Quote Consultation Modal */}
+        <QuoteModal
+          isOpen={quoteModalOpen}
+          onClose={handleCloseQuote}
+          product={quoteProduct}
+        />
+      </div>
+    </>
+  );
+};
+
+export const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <ScrollToTop />
-        <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#29231F] selection:bg-[#654329] selection:text-white">
-          {/* Top Info Bar */}
-          <TopBar />
-
-          {/* Sticky Header */}
-          <Header onOpenQuoteModal={() => handleOpenQuote(null)} />
-
-          {/* Main Routed Content */}
-          <div className="flex-1">
-            <Routes>
-              <Route path="/" element={<HomePage onOpenQuote={handleOpenQuote} />} />
-              <Route
-                path="/san-pham"
-                element={<ProductsPage onOpenQuote={handleOpenQuote} />}
-              />
-              <Route path="/san-pham/:slug"
-                element={<ProductDetailPage onOpenQuote={handleOpenQuote} />}
-              />
-              <Route path="/danh-muc" element={<CategoriesPage />} />
-              <Route path="/du-an" element={<Navigate to="/san-pham" replace />} />
-              <Route path="/gioi-thieu" element={<Navigate to="/san-pham" replace />} />
-              <Route path="/lien-he" element={<Navigate to="/san-pham" replace />} />
-
-              {/* ── Protected: Chỉ dành cho Khách hàng đã đăng nhập ── */}
-              <Route
-                path="/tai-khoan/*"
-                element={
-                  <ProtectedRoute allowedRoles={['CUSTOMER', 'SHOP_OWNER', 'ADMIN']} redirectTo="/">
-                    <AccountPage />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* ── Protected: Dành cho Chủ Shop ── */}
-              <Route
-                path="/shop/*"
-                element={
-                  <ProtectedRoute allowedRoles={['SHOP_OWNER']} redirectTo="/">
-                    <ShopDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* ── Protected: Dành cho Quản trị viên (Admin) ── */}
-              <Route
-                path="/admin/*"
-                element={
-                  <ProtectedRoute allowedRoles={['ADMIN']} redirectTo="/">
-                    <AdminDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </div>
-
-          {/* Footer */}
-          <Footer />
-
-          {/* Floating Contact Widget */}
-          <FloatingContact onOpenQuoteModal={() => handleOpenQuote(null)} />
-
-          {/* Global Quote Consultation Modal */}
-          <QuoteModal
-            isOpen={quoteModalOpen}
-            onClose={handleCloseQuote}
-            product={quoteProduct}
-          />
-        </div>
+        <AppContent />
       </BrowserRouter>
     </AuthProvider>
   );
