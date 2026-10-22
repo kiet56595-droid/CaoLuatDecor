@@ -17,12 +17,12 @@ export interface ContactConfig {
   description: string;
   hotline: {
     display: string;
-    raw: string; // Số dùng cho liên kết tel: (viết liền không dấu cách, vd: "0901234567")
+    raw: string; // Số dùng cho liên kết tel: (viết liền không dấu cách, vd: "0708.678.995")
     isConfigured: boolean;
   };
   zalo: {
     display: string;
-    url: string; // vd: "https://zalo.me/0901234567"
+    url: string; // vd: "https://zalo.me/0708678995"
     isConfigured: boolean;
   };
   facebook: {
@@ -63,15 +63,15 @@ export const CONTACT_INFO: ContactConfig = {
 
   // Hotline / Điện thoại
   hotline: {
-    display: "0909 123 456",
-    raw: "0909123456",
+    display: "0708678995",
+    raw: "0708678995",
     isConfigured: true,
   },
 
   // Zalo tư vấn & báo giá
   zalo: {
     display: "Zalo Cao Luật Decor",
-    url: "https://zalo.me/0909123456",
+    url: "https://zalo.me/0708678995",
     isConfigured: true,
   },
 
